@@ -1,10 +1,11 @@
 use serde::{Serialize, Deserialize};
 use rusqlite::{params, Result};
-use tauri::{AppHandle, Manager};
+use tauri::{AppHandle, Manager, command};
 use crate::config::db::{self, get_connection};
 use std::fs::File;
 use std::io::Write;
-
+use std::fs;
+use std::path::PathBuf;
 #[derive(Serialize, Deserialize)]
 pub struct Product {
     pub id: i32,
@@ -119,4 +120,16 @@ pub fn export_products_csv(app: AppHandle) -> Result<String, String> {
     file.write_all(&data).map_err(|e| e.to_string())?;
 
     Ok(path.to_string_lossy().into_owned())
+}
+
+#[command]
+pub fn save_csv_to_dest(app: AppHandle, dest: String) -> Result<(), String> {
+    let src = app.path().app_local_data_dir()
+        .map_err(|e| e.to_string())?
+        .join("products_export.csv");
+
+    let data = fs::read(&src).map_err(|e| e.to_string())?;
+    let dest_path = PathBuf::from(dest);
+    fs::write(dest_path, data).map_err(|e| e.to_string())?;
+    Ok(())
 }

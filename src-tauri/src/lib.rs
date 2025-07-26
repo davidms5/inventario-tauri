@@ -5,6 +5,8 @@ use modules::usuarios::auth;
 use modules::usuarios::usuarios::*;
 use modules::inventario::inventario::*;
 use crate::modules::usuarios::auth::UserInfo;
+use tauri_plugin_dialog::init as dialog_plugin;
+use tauri_plugin_fs::init as fs_plugin;
 
 #[tauri::command]
 fn greet(name: &str) -> String {
@@ -21,6 +23,8 @@ fn check_login(username: String, password_hash: String) -> Result<Option<UserInf
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .plugin(dialog_plugin())
+        .plugin(fs_plugin())
         .invoke_handler(tauri::generate_handler![
             greet,
             check_login,
@@ -32,7 +36,8 @@ pub fn run() {
             create_product,
             update_product,
             delete_product,
-            export_products_csv
+            export_products_csv,
+            save_csv_to_dest,
             ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

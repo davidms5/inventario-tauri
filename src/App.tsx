@@ -8,6 +8,7 @@ import { useAuthStore } from './store/useAuthStore';
 import Usuarios from './pages/Usuarios';
 import { ADMIN } from './shared/constants';
 import Inventario from './pages/Inventario';
+import Ventas from './pages/Ventas';
 
 function App() {
   //const [loggedUser, setLoggedUser] = useState<string | null>(null);
@@ -39,6 +40,10 @@ function App() {
         <Route 
         path='/inventario'
         element={user ? <Inventario/> : <Navigate to="/dashboard" replace />}/>
+        <Route
+          path="/ventas"
+          element={user ? <Ventas /> : <Navigate to="/dashboard" replace />}
+        />
         <Route path="*" element={<Navigate to={user ? '/dashboard' : '/login'} replace />} />
       </Routes>
     </BrowserRouter>

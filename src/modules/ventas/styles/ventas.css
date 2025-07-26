@@ -1,0 +1,7 @@
+.ventas-container { padding: 1rem; font-family: sans-serif; }
+.filtros input, .filtros select { margin-right: 1rem; padding: 0.4rem; }
+.dashboard-kpi { display: flex; gap: 1rem; margin: 1rem 0; }
+.kpi-card { background: #5c5757; padding: 1rem; border-radius: 4px; flex:1; text-align: center; }
+.ventas-table { width:100%; border-collapse: collapse; margin-top:1rem; }
+.ventas-table th, td { border:1px solid #615c5c; padding:0.5rem; }
+.ventas-table th { background: #706c6c; }

@@ -1,0 +1,45 @@
+.dashboard-container {
+  font-family: sans-serif;
+  max-width: 600px;
+  margin: 2rem auto;
+  padding: 1rem;
+  background: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+  text-align: center;
+}
+
+.dashboard-container h2 {
+  font-size: 1.8rem;
+  margin-bottom: 1.5rem;
+  color: rgb(121, 119, 119);
+}
+
+.nav-buttons {
+  gap: 0.8rem;
+  margin-bottom: 1.5rem;
+}
+
+.nav-buttons button {
+  padding: 0.6rem 1.4rem;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+  margin-right: 1rem;
+}
+
+.nav-buttons button:hover {
+  background-color: #0056b3;
+}
+
+.logout-button {
+  margin-top: 1rem;
+  background-color: #dc3545;
+}
+
+.logout-button:hover {
+  background-color: #b52a3c;
+}

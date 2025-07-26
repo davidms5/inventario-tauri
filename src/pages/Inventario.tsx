@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { useNavigate } from "react-router-dom";
-//import { open } from "@tauri-apps/plugin-dialog";
-//import { readBinaryFile, writeBinaryFile, BaseDirectory } from "@tauri-apps/plugin-fs";
+import { save } from "@tauri-apps/plugin-dialog";
+import { readFile, writeFile } from '@tauri-apps/plugin-fs';
+import { desktopDir, join } from '@tauri-apps/api/path';
+import styles from "../modules/productos/styles/Inventario.module.css";
 
 type Product = {
   id: number;
@@ -61,32 +63,37 @@ export default function Inventario() {
 
   useEffect(() => { load(); }, []);
 
-    //const downloadCSV = async () => {
-    //    try {
-    //        const filePath: string = await invoke("export_products_csv");
-    //        const dest = await open({
-    //        title: "Guardar CSV",
-    //        defaultPath: "products_export.csv",
-    //        filters: [{ name: "CSV", extensions: ["csv"] }],
-    //        multiple: false,
-    //        });
-    //        if (!dest) return;
-    //        const content = await readBinaryFile(filePath, { baseDir: BaseDirectory.AppConfig });
-    //        await writeBinaryFile(dest, content);
-    //        alert("CSV exportado correctamente.");
-    //    } catch (err) {
-    //        console.error(err);
-    //        alert("Error al exportar CSV");
-    //    }
-    //};
+  const downloadCSV = async () => {
+    try {
+       await invoke('export_products_csv');
+
+    // Luego diálogo para elegir lugar de guardado
+    const destPath = await save({
+      title: 'Guardar CSV',
+      defaultPath: await join(await desktopDir(), 'products_export.csv'),
+      filters: [{ name: 'CSV', extensions: ['csv'] }]
+    });
+    if (!destPath) return;
+
+    // Invocás el comando Rust que hace la copia
+    await invoke('save_csv_to_dest', { dest: destPath });
+
+    alert('CSV exportado correctamente.');
+    } catch (err) {
+      console.error(err);
+      alert('Error exportando CSV');
+    }
+  };
 
   return (
-    <div>
+    <div className={styles['inventario-container']}>
       <h2>Productos</h2>
+      <div className={styles.toolbar}>
         <button onClick={() => navigate("/dashboard")}>dashboard</button>
-        <button>descargar csv</button>
-        <hr />
-      <fieldset>
+       {/* <button onClick={() => downloadCSV()}>descargar csv</button>*/}
+      </div>
+    
+      <fieldset className={styles['form-section']}>
         <legend>{editId ? "Editar Producto" : "Nuevo Producto"}</legend>
         <input value={form.nombre} placeholder="Nombre" onChange={e => setForm({ ...form, nombre: e.target.value })} />
         <input value={form.sku} placeholder="SKU" onChange={e => setForm({ ...form, sku: e.target.value })} />
@@ -98,22 +105,25 @@ export default function Inventario() {
         {editId && <button onClick={() => { setEditId(null); setForm({ nombre: "", sku: "", descripcion: "", price: 0, quantity: 0, category: "" }); }}>Cancelar</button>}
       </fieldset>
 
-      <table>
-        <thead>
-          <tr><th>Nombre</th><th>SKU</th><th>Precio</th><th>Cantidad</th><th>Categoría</th><th>Acciones</th></tr>
-        </thead>
-        <tbody>
-          {products.map(p => (
-            <tr key={p.id}>
-              <td>{p.nombre}</td><td>{p.sku}</td><td>${p.price}</td><td>{p.quantity}</td><td>{p.category}</td>
-              <td>
-                <button onClick={() => startEdit(p)}>Editar</button>
-                <button onClick={() => handleDelete(p.id)}>Eliminar</button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <div className={styles['table-section']}>
+        <table className={styles['products-table']}>
+          <thead>
+            <tr><th>Nombre</th><th>SKU</th><th>Precio</th><th>Cantidad</th><th>Categoría</th><th>Acciones</th></tr>
+          </thead>
+          <tbody>
+            {products.map(p => (
+              <tr key={p.id}>
+                <td>{p.nombre}</td><td>{p.sku}</td><td>${p.price}</td><td>{p.quantity}</td><td>{p.category}</td>
+                <td>
+                  <button onClick={() => startEdit(p)}>Editar</button>
+                  <button onClick={() => handleDelete(p.id)}>Eliminar</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
     </div>
   );
 }

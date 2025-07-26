@@ -1,0 +1,17 @@
+{
+  "identifier": "filesystem",
+  "description": "Permite leer y escribir archivos locales",
+  "windows": ["*"],
+  "permissions": [
+    "fs:default",
+    "fs:read-all",
+    "fs:write-all",
+        {
+      "identifier": "fs:scope",
+      "allow": [
+          { "path": "$APPLOCALDATA/*" },
+          { "path": "$DESKTOP/*" }
+      ]
+    }
+  ]
+}

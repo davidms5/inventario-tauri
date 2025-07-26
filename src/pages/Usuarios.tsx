@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { useNavigate } from "react-router-dom";
+import styles from "../modules/usuarios/styles/Usuarios.module.css";
 
 type User = {
   id: number;
@@ -79,11 +80,11 @@ export default function Usuarios() {
   }, []);
 
   return (
-    <div>
+    <div className={styles['usuarios-container']}>
       <h2>Gestión de Usuarios</h2>
 
       {/* Crear usuario */}
-      <div>
+      <div className={styles['form-section']}>
         <h3>Crear Usuario</h3>
         <button onClick={() => navigate("/dashboard")}>dashboard</button>
         <hr />
@@ -108,18 +109,23 @@ export default function Usuarios() {
 
       {/* Listado */}
       {/* Lista de usuarios */}
-      <div>
+      <div className={styles['list-section']}>
         <h3>Lista de Usuarios</h3>
-        <ul>
+        <ul className={styles['user-list']}>
           {users.map((user) => (
             <li key={user.id}>
-              {user.username} ({user.rol})
+              <div className={styles['user-info']}>
+                {user.username} ({user.rol})
+              </div>
+              
+              <div className={styles['user-actions']}>
               <button onClick={() => handleDelete(user.id)} style={{ marginLeft: "10px" }}>
                 Eliminar
               </button>
               <button onClick={() => handleEdit(user)} style={{ marginLeft: "10px" }}>
                 Editar
               </button>
+              </div>
             </li>
           ))}
         </ul>
@@ -127,7 +133,7 @@ export default function Usuarios() {
 
             {/* Formulario de edición */}
       {editUserId && (
-        <div>
+        <div className={styles['edit-section']}>
           <h3>Editar Usuario</h3>
           <input
             type="password"

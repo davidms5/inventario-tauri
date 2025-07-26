@@ -1,0 +1,115 @@
+/* Inventario.module.css o App.css */
+
+/* Contenedor general */
+.inventario-container {
+  font-family: sans-serif;
+  padding: 1rem;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+/* Título y botónes superiores */
+.inventario-container h2 {
+  text-align: center;
+  margin-bottom: 1rem;
+  font-size: 1.8rem;
+}
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+.toolbar button {
+  padding: 0.5rem 1rem;
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.toolbar button:hover {
+  background: #0056b3;
+}
+
+/* Formulario CRUD */
+.form-section {
+  background: #7f8285;
+  padding: 1rem;
+  border-radius: 6px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+  margin-bottom: 1.5rem;
+}
+.form-section legend {
+  font-size: 1.2rem;
+  margin-bottom: 0.8rem;
+}
+.form-section input,
+.form-section select {
+  width: 95%;
+  padding: 0.6rem;
+  margin-bottom: 0.8rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+.form-section button {
+  padding: 0.6rem 1.2rem;
+  background: #28a745;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.form-section button:hover {
+  background: #1e7e34;
+}
+.form-section button + button {
+  margin-left: 0.5rem;
+  background: #dc3545;
+}
+.form-section button + button:hover {
+  background: #b52a3c;
+}
+
+/* Tabla de productos */
+.table-section {
+  overflow-x: auto;
+}
+.products-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+}
+.products-table th,
+.products-table td {
+  border: 1px solid #ddd;
+  padding: 0.6rem;
+  text-align: left;
+}
+.products-table th {
+  background: #666565;
+  font-weight: bold;
+}
+.products-table tr:nth-child(even) {
+  background: #fafafa;
+}
+.products-table button {
+  padding: 0.3rem 0.6rem;
+  margin-right: 0.3rem;
+  font-size: 0.9rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  color: white;
+}
+.products-table button:first-child {
+  background: #17a2b8;
+}
+.products-table button:first-child:hover {
+  background: #117a8b;
+}
+.products-table button:last-child {
+  background: #dc3545;
+}
+.products-table button:last-child:hover {
+  background: #b52a3c;
+}

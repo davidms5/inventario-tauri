@@ -1,0 +1,10 @@
+{
+  "identifier": "dialog",
+  "description": "Permitir abrir y guardar archivos",
+  "windows": ["*"],
+  "permissions": [
+    "dialog:default",
+    "dialog:allow-open",
+    "dialog:allow-save"
+  ]
+}
