@@ -10,3 +10,4 @@ This template should help get you started developing with Tauri, React and Types
 - debes tener instalado tanto rust como nodejs
 - en la raiz del proyecto, en la terminal, escribir npm install
 - para correr el proyecto en modo desarrollo: npm run tauri dev
+- IMPORTANTE: correr el siguiente comando si se esta en windows: cargo install diesel_cli --no-default-features --features sqlite-bundled
