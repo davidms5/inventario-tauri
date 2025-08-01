@@ -1,11 +1,8 @@
 use serde::{Serialize, Deserialize};
 use rusqlite::{params, Result};
-use tauri::{AppHandle, Manager, command};
 use crate::config::db::{self, get_connection};
-use std::fs::File;
-use std::io::Write;
-use std::fs;
-use std::path::PathBuf;
+use csv::Writer;
+
 #[derive(Serialize, Deserialize)]
 pub struct Product {
     pub id: i32,
@@ -74,62 +71,30 @@ pub fn delete_product(id: i32) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub fn export_products_csv(app: AppHandle) -> Result<String, String> {
+pub fn export_table_to_csv(path: String) -> Result<(), String> {
     let conn = get_connection();
     let mut stmt = conn.prepare(
         "SELECT id, nombre, sku, descripcion, price, quantity, category FROM products"
     ).map_err(|e| e.to_string())?;
-    let rows = stmt
-        .query_map([], |row| {
-            Ok(Product {
-                id: row.get(0)?,
-                nombre: row.get(1)?,
-                sku: row.get(2)?,
-                descripcion: row.get(3)?,
-                price: row.get(4)?,
-                quantity: row.get(5)?,
-                category: row.get(6)?,
-            })
-        }).map_err(|e| e.to_string())?
-        .collect::<Result<Vec<_>, _>>()
-        .map_err(|e| e.to_string())?;
 
-    // Serializar a CSV
-    let mut wtr = csv::Writer::from_writer(vec![]);
-    wtr.write_record(&["id", "nombre", "sku", "descripcion", "price", "quantity", "category"])
-        .map_err(|e| e.to_string())?;
-    for p in rows {
-        wtr.write_record(&[
-            p.id.to_string(),
-            p.nombre,
-            p.sku.clone().unwrap_or_default(),
-            p.descripcion.clone().unwrap_or_default(),
-            p.price.to_string(),
-            p.quantity.to_string(),
-            p.category.clone().unwrap_or_default(),
-        ]).map_err(|e| e.to_string())?;
+    let rows = stmt.query_map([], |row| {
+        Ok(Product {
+            id: row.get(0)?,
+            nombre: row.get(1)?,
+            sku: row.get(2)?,
+            descripcion: row.get(3)?,
+            price: row.get(4)?,
+            quantity: row.get(5)?,
+            category: row.get(6)?,
+        })
+    }).map_err(|e| e.to_string())?;
+
+    let mut wtr = Writer::from_path(path).map_err(|e| e.to_string())?;
+    for prod in rows {
+        let p = prod.map_err(|e| e.to_string())?;
+        wtr.serialize(p).map_err(|e| e.to_string())?;
     }
-    let data = wtr.into_inner().map_err(|e| e.to_string())?;
+    wtr.flush().map_err(|e| e.to_string())?;
 
-    // Obtener directorio AppData desde AppHandle
-    let dir = app.path().app_data_dir().map_err(|e| e.to_string())?;
-    std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
-    let path = dir.join("products_export.csv");
-
-    let mut file = File::create(&path).map_err(|e| e.to_string())?;
-    file.write_all(&data).map_err(|e| e.to_string())?;
-
-    Ok(path.to_string_lossy().into_owned())
-}
-
-#[command]
-pub fn save_csv_to_dest(app: AppHandle, dest: String) -> Result<(), String> {
-    let src = app.path().app_local_data_dir()
-        .map_err(|e| e.to_string())?
-        .join("products_export.csv");
-
-    let data = fs::read(&src).map_err(|e| e.to_string())?;
-    let dest_path = PathBuf::from(dest);
-    fs::write(dest_path, data).map_err(|e| e.to_string())?;
     Ok(())
 }

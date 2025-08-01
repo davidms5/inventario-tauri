@@ -36,8 +36,7 @@ pub fn run() {
             create_product,
             update_product,
             delete_product,
-            export_products_csv,
-            save_csv_to_dest,
+            export_table_to_csv
             ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
