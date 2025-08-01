@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { useNavigate } from "react-router-dom";
 import { save } from "@tauri-apps/plugin-dialog";
-import { readFile, writeFile } from '@tauri-apps/plugin-fs';
 import { desktopDir, join } from '@tauri-apps/api/path';
 import styles from "../modules/productos/styles/Inventario.module.css";
 
@@ -65,20 +64,16 @@ export default function Inventario() {
 
   const downloadCSV = async () => {
     try {
-       await invoke('export_products_csv');
+      const destPath = await save({
+        title: 'Guardar CSV',
+        defaultPath: await join(await desktopDir(), 'products_export.csv'),
+        filters: [{ name: 'CSV', extensions: ['csv'] }],
+      });
+      if (!destPath) return;
 
-    // Luego diálogo para elegir lugar de guardado
-    const destPath = await save({
-      title: 'Guardar CSV',
-      defaultPath: await join(await desktopDir(), 'products_export.csv'),
-      filters: [{ name: 'CSV', extensions: ['csv'] }]
-    });
-    if (!destPath) return;
+      await invoke('export_table_to_csv', { path: destPath });
 
-    // Invocás el comando Rust que hace la copia
-    await invoke('save_csv_to_dest', { dest: destPath });
-
-    alert('CSV exportado correctamente.');
+      alert('CSV exportado correctamente.');
     } catch (err) {
       console.error(err);
       alert('Error exportando CSV');
@@ -90,7 +85,7 @@ export default function Inventario() {
       <h2>Productos</h2>
       <div className={styles.toolbar}>
         <button onClick={() => navigate("/dashboard")}>dashboard</button>
-       {/* <button onClick={() => downloadCSV()}>descargar csv</button>*/}
+       <button onClick={() => downloadCSV()}>descargar csv</button>
       </div>
     
       <fieldset className={styles['form-section']}>
