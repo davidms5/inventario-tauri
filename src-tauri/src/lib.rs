@@ -1,6 +1,7 @@
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 mod modules;
 pub mod config;
+pub mod schema;
 use modules::usuarios::auth;
 use modules::usuarios::usuarios::*;
 use modules::inventario::inventario::*;

@@ -32,7 +32,7 @@ export default function Usuarios() {
 
   const handleCreate = async () => {
     try {
-      await invoke("create_user", { username, password_hash: password, rol: role });
+      await invoke("create_user", { new_username: username, new_password_hash: password, new_rol: role });
       setUsername("");
       setPassword("");
       setRole("empleado");
@@ -44,7 +44,7 @@ export default function Usuarios() {
 
   const handleDelete = async (id: number) => {
     try {
-      await invoke("delete_user", { id });
+      await invoke("delete_user", { target_id:id });
       fetchUsers();
     } catch (error) {
       console.error("Error eliminando usuario", error);
@@ -63,9 +63,9 @@ export default function Usuarios() {
 
     try {
       await invoke("update_user", {
-        id: editUserId,
-        password_hash: editPassword,
-        rol: editRole,
+        target_id: editUserId,
+        plain_password: editPassword,
+        new_rol: editRole,
       });
 
       setEditUserId(null);

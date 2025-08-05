@@ -1,6 +1,34 @@
 // @generated automatically by Diesel CLI.
 
 diesel::table! {
+    combo_items (combo_id, product_id) {
+        combo_id -> Integer,
+        product_id -> Integer,
+        cantidad -> Integer,
+    }
+}
+
+diesel::table! {
+    combos (id) {
+        id -> Nullable<Integer>,
+        nombre -> Text,
+        descripcion -> Nullable<Text>,
+        price -> Float,
+        enabled -> Bool,
+    }
+}
+
+diesel::table! {
+    payments (id) {
+        id -> Nullable<Integer>,
+        sale_id -> Integer,
+        monto -> Float,
+        forma_pago -> Text,
+        referencia -> Nullable<Text>,
+    }
+}
+
+diesel::table! {
     products (id) {
         id -> Nullable<Integer>,
         nombre -> Text,
@@ -11,6 +39,31 @@ diesel::table! {
         category -> Nullable<Text>,
         created_at -> Nullable<Text>,
         updated_at -> Nullable<Text>,
+        enabled -> Bool,
+    }
+}
+
+diesel::table! {
+    sale_items (id) {
+        id -> Nullable<Integer>,
+        sale_id -> Integer,
+        product_id -> Nullable<Integer>,
+        combo_id -> Nullable<Integer>,
+        cantidad -> Integer,
+        precio_unitario -> Float,
+        costo_unitario -> Float,
+    }
+}
+
+diesel::table! {
+    sales (id) {
+        id -> Nullable<Integer>,
+        user_id -> Integer,
+        fecha -> Text,
+        total -> Float,
+        forma_pago -> Text,
+        estado -> Text,
+        deleted_at -> Nullable<Text>,
     }
 }
 
@@ -21,10 +74,24 @@ diesel::table! {
         password_hash -> Text,
         created_at -> Nullable<Timestamp>,
         rol -> Nullable<Text>,
+        enabled_add_products -> Bool,
     }
 }
 
+diesel::joinable!(combo_items -> combos (combo_id));
+diesel::joinable!(combo_items -> products (product_id));
+diesel::joinable!(payments -> sales (sale_id));
+diesel::joinable!(sale_items -> combos (combo_id));
+diesel::joinable!(sale_items -> products (product_id));
+diesel::joinable!(sale_items -> sales (sale_id));
+diesel::joinable!(sales -> users (user_id));
+
 diesel::allow_tables_to_appear_in_same_query!(
+    combo_items,
+    combos,
+    payments,
     products,
+    sale_items,
+    sales,
     users,
 );
