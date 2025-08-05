@@ -1,97 +1,120 @@
-use serde::{Serialize, Deserialize};
-use rusqlite::{params, Result};
-use crate::config::db::{self, get_connection};
+use rusqlite::{Result};
+use crate::config::db::{get_conn};
 use csv::Writer;
-
-#[derive(Serialize, Deserialize)]
-pub struct Product {
-    pub id: i32,
-    pub nombre: String,
-    pub sku: Option<String>,
-    pub descripcion: Option<String>,
-    pub price: f64,
-    pub quantity: i32,
-    pub category: Option<String>,
-}
-
-
+use crate::schema::products::dsl::*;
+use super::models::{Product, NewProduct, UpdateProduct};
+use diesel::prelude::*;
+use std::fs::File;
+use crate::schema::combo_items::dsl::{combo_items, product_id as combo_product_id};
 
 #[tauri::command]
 pub fn list_products() -> Result<Vec<Product>, String> {
-    let conn = db::get_connection();
-    let mut stmt = conn.prepare(
-        "SELECT id, nombre, sku, descripcion, price, quantity, category FROM products"
-    ).map_err(|e| e.to_string())?;
 
-    let products = stmt.query_map([], |row| {
-        Ok(Product {
-            id: row.get(0)?,
-            nombre: row.get(1)?,
-            sku: row.get(2)?,
-            descripcion: row.get(3)?,
-            price: row.get(4)?,
-            quantity: row.get(5)?,
-            category: row.get(6)?,
-        })
-    }).map_err(|e| e.to_string())?
-    .collect::<Result<Vec<_>, _>>()
-    .map_err(|e| e.to_string())?;
+    let mut conn = get_conn();
 
-    Ok(products)
+    products
+        .filter(enabled.eq(true))
+        .select((id, nombre, sku, descripcion, price, quantity, category))
+        .load::<Product>(&mut conn)
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
-pub fn create_product(nombre: String, sku: Option<String>, descripcion: Option<String>, price: f64, quantity: i32, category: Option<String>) -> Result<(), String> {
-    let conn = db::get_connection();
-    conn.execute(
-        "INSERT INTO products (nombre, sku, descripcion, price, quantity, category) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
-        params![nombre, sku, descripcion, price, quantity, category],
-    ).map_err(|e| e.to_string())?;
-    Ok(())
+pub fn create_product(
+    nombre_: String,
+    sku_: Option<String>,
+    descripcion_: Option<String>,
+    price_: f32,
+    quantity_: i32,
+    category_: Option<String>,
+) -> Result<usize, String> {
+    use crate::schema::products::dsl::*;
+
+    let mut conn = get_conn();
+
+    let new_product = NewProduct {
+        nombre: &nombre_,
+        sku: sku_.as_deref(),
+        descripcion: descripcion_.as_deref(),
+        price: price_,
+        quantity: quantity_,
+        category: category_.as_deref(),
+    };
+
+    diesel::insert_into(products)
+        .values(&new_product)
+        .execute(&mut conn)
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
-pub fn update_product(id: i32, nombre: String, sku: Option<String>, descripcion: Option<String>, price: f64, quantity: i32, category: Option<String>) -> Result<(), String> {
-    let conn = db::get_connection();
-    conn.execute(
-        "UPDATE products SET nombre = ?1, sku = ?2, descripcion = ?3, price = ?4, quantity = ?5, category = ?6 WHERE id = ?7",
-        params![nombre, sku, descripcion, price, quantity, category, id],
-    ).map_err(|e| e.to_string())?;
-    Ok(())
+pub fn update_product(
+    id_: i32,
+    nombre_: String,
+    sku_: Option<String>,
+    descripcion_: Option<String>,
+    price_: f32,
+    quantity_: i32,
+    category_: Option<String>,
+) -> Result<usize, String> {
+    use crate::schema::products::dsl::*;
+
+    let mut conn = get_conn();
+
+    let changes = UpdateProduct {
+        nombre: &nombre_,
+        sku: sku_.as_deref(),
+        descripcion: descripcion_.as_deref(),
+        price: price_,
+        quantity: quantity_,
+        category: category_.as_deref(),
+    };
+
+    diesel::update(products.filter(id.eq(id_)))
+        .set(&changes)
+        .execute(&mut conn)
+        .map_err(|e| e.to_string())
 }
 
-#[tauri::command]
-pub fn delete_product(id: i32) -> Result<(), String> {
-    let conn = db::get_connection();
-    conn.execute(
-        "DELETE FROM products WHERE id = ?1",
-        params![id],
-    ).map_err(|e| e.to_string())?;
+#[tauri::command(rename_all = "snake_case")]
+pub fn delete_product(target_id: i32) -> Result<(), String> {
+
+    let mut conn = get_conn();
+
+    // Verificamos si el producto está en algún combo
+    let en_combos = combo_items
+        .filter(combo_product_id.eq(target_id))
+        .count()
+        .get_result::<i64>(&mut conn)
+        .map_err(|e| e.to_string())?;
+
+    if en_combos > 0 {
+        return Err("El producto no puede eliminarse porque forma parte de uno o más combos.".into());
+    }
+
+    // Borrado físico del producto (esto solo es posible porque en sale_items el FK es ON DELETE SET NULL)
+    diesel::delete(products.filter(id.eq(target_id)))
+        .execute(&mut conn)
+        .map_err(|e| e.to_string())?;
+
     Ok(())
 }
 
 #[tauri::command]
 pub fn export_table_to_csv(path: String) -> Result<(), String> {
-    let conn = get_connection();
-    let mut stmt = conn.prepare(
-        "SELECT id, nombre, sku, descripcion, price, quantity, category FROM products"
-    ).map_err(|e| e.to_string())?;
+    use crate::schema::products::dsl::*;
 
-    let rows = stmt.query_map([], |row| {
-        Ok(Product {
-            id: row.get(0)?,
-            nombre: row.get(1)?,
-            sku: row.get(2)?,
-            descripcion: row.get(3)?,
-            price: row.get(4)?,
-            quantity: row.get(5)?,
-            category: row.get(6)?,
-        })
-    }).map_err(|e| e.to_string())?;
+    let mut conn = get_conn();
 
-    let mut wtr = Writer::from_path(path).map_err(|e| e.to_string())?;
-    for prod in rows {
-        let p = prod.map_err(|e| e.to_string())?;
+    let all_products = products
+        .select((id, nombre, sku, descripcion, price, quantity, category))
+        .load::<Product>(&mut conn)
+        .map_err(|e| e.to_string())?;
+
+    let file = File::create(path).map_err(|e| e.to_string())?;
+    let mut wtr = Writer::from_writer(file);
+
+    for p in all_products {
         wtr.serialize(p).map_err(|e| e.to_string())?;
     }
     wtr.flush().map_err(|e| e.to_string())?;

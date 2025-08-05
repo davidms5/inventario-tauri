@@ -51,7 +51,7 @@ export default function Inventario() {
   };
 
   const handleDelete = async (id: number) => {
-    await invoke("delete_product", { id });
+    await invoke("delete_product", { target_id: id });
     load();
   };
 
@@ -90,11 +90,17 @@ export default function Inventario() {
     
       <fieldset className={styles['form-section']}>
         <legend>{editId ? "Editar Producto" : "Nuevo Producto"}</legend>
+        <p>nombre</p>
         <input value={form.nombre} placeholder="Nombre" onChange={e => setForm({ ...form, nombre: e.target.value })} />
+        <p>id unico</p>
         <input value={form.sku} placeholder="SKU" onChange={e => setForm({ ...form, sku: e.target.value })} />
+        <p>descripcion</p>
         <input value={form.descripcion} placeholder="Descripción" onChange={e => setForm({ ...form, descripcion: e.target.value })} />
+        <p>precio</p>
         <input type="number" value={form.price} placeholder="Precio" onChange={e => setForm({ ...form, price: parseFloat(e.target.value) })} />
+        <p>cantidad</p>
         <input type="number" value={form.quantity} placeholder="Cantidad" onChange={e => setForm({ ...form, quantity: parseInt(e.target.value) })} />
+        <p>categoria</p>
         <input value={form.category} placeholder="Categoría" onChange={e => setForm({ ...form, category: e.target.value })} />
         <button onClick={handleSubmit}>{editId ? "Guardar Cambios" : "Crear"}</button>
         {editId && <button onClick={() => { setEditId(null); setForm({ nombre: "", sku: "", descripcion: "", price: 0, quantity: 0, category: "" }); }}>Cancelar</button>}

@@ -90,7 +90,7 @@
   font-weight: bold;
 }
 .products-table tr:nth-child(even) {
-  background: #fafafa;
+  background: #6d6c6c;
 }
 .products-table button {
   padding: 0.3rem 0.6rem;
