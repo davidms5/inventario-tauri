@@ -25,7 +25,7 @@ export default function Dashboard() {
                 <button onClick={goToUsers}>Ir a Usuarios</button>
                 )}
                 <button onClick={() => navigate("/inventario")}>inventario</button>
-                <button onClick={() => navigate("/ventas")}>ventas</button>
+                {rol === ADMIN && <button onClick={() => navigate("/ventas-admin")}>ventas admin</button>}
                 <button className={styles['logout-button']}  onClick={handleLogout} style={{ marginLeft: '10px' }}>
                     Logout
                 </button>

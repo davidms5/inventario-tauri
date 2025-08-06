@@ -1,7 +1,107 @@
-.ventas-container { padding: 1rem; font-family: sans-serif; }
-.filtros input, .filtros select { margin-right: 1rem; padding: 0.4rem; }
-.dashboard-kpi { display: flex; gap: 1rem; margin: 1rem 0; }
-.kpi-card { background: #5c5757; padding: 1rem; border-radius: 4px; flex:1; text-align: center; }
-.ventas-table { width:100%; border-collapse: collapse; margin-top:1rem; }
-.ventas-table th, td { border:1px solid #615c5c; padding:0.5rem; }
-.ventas-table th { background: #706c6c; }
+/* ventas.css */
+
+.ventas-container {
+  font-family: sans-serif;
+  padding: 1rem;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.ventas-container h2 {
+  margin-bottom: 1rem;
+  text-align: center;
+  font-size: 1.6rem;
+}
+
+.filtros {
+  display: flex;
+  gap: 0.8rem;
+  align-items: center;
+  margin-bottom: 1.2rem;
+}
+
+.dashboard-kpi {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.kpi-card {
+  background: #616060;
+  padding: 1rem;
+  border-radius: 6px;
+  flex: 1;
+  text-align: center;
+}
+
+/* Tabla de reporte con estilos similares a la imagen */
+.report-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1.2rem;
+}
+
+.report-table th,
+.report-table td {
+  border: 1px solid #ccc;
+  padding: 0.6rem;
+  text-align: center;
+  font-size: 0.95rem;
+}
+
+.report-table th {
+  background: #686767;
+  font-weight: bold;
+}
+
+.report-table tr:nth-child(even) {
+  background: #706f6f;
+}
+
+.report-table td.quantity,
+.report-table td.price,
+.report-table td.income,
+.report-table td.cost_unit,
+.report-table td.cost_total,
+.report-table td.profit,
+.report-table td.inventory_initial,
+.report-table td.inventory_final {
+  text-align: right;
+}
+
+.description-section {
+  margin-top: 2rem;
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+.description-section strong {
+  display: block;
+  margin-top: 0.8rem;
+}
+
+.pagination-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.pagination-controls button {
+  padding: 0.5rem 0.8rem;
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.pagination-controls button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.pagination-controls span {
+  font-size: 1rem;
+}

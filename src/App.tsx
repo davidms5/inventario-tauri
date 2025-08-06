@@ -41,8 +41,8 @@ function App() {
         path='/inventario'
         element={user ? <Inventario/> : <Navigate to="/dashboard" replace />}/>
         <Route
-          path="/ventas"
-          element={user ? <Ventas /> : <Navigate to="/dashboard" replace />}
+          path="/ventas-admin"
+          element={user && rol === ADMIN ? <Ventas /> : <Navigate to="/dashboard" replace />}
         />
         <Route path="*" element={<Navigate to={user ? '/dashboard' : '/login'} replace />} />
       </Routes>
