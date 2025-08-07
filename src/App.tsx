@@ -9,6 +9,7 @@ import Usuarios from './pages/Usuarios';
 import { ADMIN } from './shared/constants';
 import Inventario from './pages/Inventario';
 import Ventas from './pages/Ventas';
+import Combos from './pages/Combos';
 
 function App() {
   //const [loggedUser, setLoggedUser] = useState<string | null>(null);
@@ -44,6 +45,10 @@ function App() {
           path="/ventas-admin"
           element={user && rol === ADMIN ? <Ventas /> : <Navigate to="/dashboard" replace />}
         />
+        <Route
+          path="/combos"
+          element={user && rol === ADMIN ? <Combos /> : <Navigate to="/dashboard" replace />} />
+
         <Route path="*" element={<Navigate to={user ? '/dashboard' : '/login'} replace />} />
       </Routes>
     </BrowserRouter>

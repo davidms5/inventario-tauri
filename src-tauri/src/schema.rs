@@ -10,7 +10,7 @@ diesel::table! {
 
 diesel::table! {
     combos (id) {
-        id -> Nullable<Integer>,
+        id -> Integer,
         nombre -> Text,
         descripcion -> Nullable<Text>,
         price -> Float,
