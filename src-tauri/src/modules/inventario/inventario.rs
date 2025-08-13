@@ -20,6 +20,17 @@ pub fn list_products() -> Result<Vec<Product>, String> {
 }
 
 #[tauri::command]
+pub fn list_products_in_stock() -> Result<Vec<Product>, String> {
+    let mut conn = get_conn();
+    products
+        .filter(enabled.eq(true))
+        .filter(quantity.gt(0))
+        .select((id, nombre, sku, descripcion, price, quantity, category))
+        .load::<Product>(&mut conn)
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
 pub fn create_product(
     nombre_: String,
     sku_: Option<String>,

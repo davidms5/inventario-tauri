@@ -13,6 +13,17 @@ pub fn list_combos() -> Result<Vec<Combo>, String> {
 }
 
 #[tauri::command]
+pub fn list_active_combos() -> Result<Vec<Combo>, String> {
+    use crate::schema::combos::dsl::*;
+    let mut conn = get_conn();
+    let result = combos
+        .filter(enabled.eq(true))
+        .load::<Combo>(&mut conn)
+        .map_err(|e| e.to_string())?;
+    Ok(result)
+}
+
+#[tauri::command]
 pub fn create_combo(new: NewCombo) -> Result<(), String> {
 
     let mut conn = get_conn();
@@ -25,16 +36,16 @@ pub fn create_combo(new: NewCombo) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub fn update_combo(update: UpdateCombo) -> Result<(), String> {
+pub fn update_combo(form: UpdateCombo) -> Result<(), String> {
 
     let mut conn = get_conn();
 
-    diesel::update(combos::table.find(update.id))
+    diesel::update(combos::table.find(form.id))
         .set((
-          combos::nombre.eq(update.nombre),
-          combos::descripcion.eq(update.descripcion),
-          combos::price.eq(update.price),
-          combos::enabled.eq(update.enabled),
+          combos::nombre.eq(form.nombre),
+          combos::descripcion.eq(form.descripcion),
+          combos::price.eq(form.price),
+          combos::enabled.eq(form.enabled),
         ))
         .execute(&mut conn)
         .map_err(|e| e.to_string())

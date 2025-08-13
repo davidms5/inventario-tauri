@@ -24,7 +24,9 @@ export default function Dashboard() {
                 {rol === ADMIN && (
                 <button onClick={goToUsers}>Ir a Usuarios</button>
                 )}
-                <button onClick={() => navigate("/inventario")}>inventario</button>
+                {/**TODO: aqui ver tema de logica condicional, si el usuario es admin || usuario empleado tiene el flag habilitado para hacer crud de productos */}
+                {rol === ADMIN && <button onClick={() => navigate("/inventario")}>inventario</button>}
+                <button onClick={() => navigate("/ventas")}>nueva venta</button>
                 {rol === ADMIN && <button onClick={() => navigate("/ventas-admin")}>ventas admin</button>}
                 {rol === ADMIN && <button onClick={() => navigate("/combos")}>Combos</button>}
                 <button className={styles['logout-button']}  onClick={handleLogout} style={{ marginLeft: '10px' }}>

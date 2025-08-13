@@ -106,9 +106,6 @@ button {
   }
 
 
-  button {
-    color: #ffffff;
-  }
   button:active {
     background-color: #0f0f0f69;
   }

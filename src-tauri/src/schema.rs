@@ -30,7 +30,7 @@ diesel::table! {
 
 diesel::table! {
     products (id) {
-        id -> Nullable<Integer>,
+        id -> Integer,
         nombre -> Text,
         sku -> Nullable<Text>,
         descripcion -> Nullable<Text>,
@@ -45,7 +45,7 @@ diesel::table! {
 
 diesel::table! {
     sale_items (id) {
-        id -> Nullable<Integer>,
+        id -> Integer,
         sale_id -> Integer,
         product_id -> Nullable<Integer>,
         combo_id -> Nullable<Integer>,
@@ -57,7 +57,7 @@ diesel::table! {
 
 diesel::table! {
     sales (id) {
-        id -> Nullable<Integer>,
+        id -> Integer,
         user_id -> Integer,
         fecha -> Text,
         total -> Float,

@@ -7,7 +7,7 @@ use serde::Serialize;
 
 #[derive(Serialize)]
 pub struct VentaDetalle {
-    pub id: Option<i32>,
+    pub id: i32,
     pub fecha: String,
     pub producto: Option<String>, // puede venir de sale_items
     pub cantidad: i32,
@@ -41,9 +41,9 @@ pub fn list_sales_paginated(
     let mut count_query = sales::table
         .inner_join(sale_items::table.on(sale_items::sale_id.eq(sales::id.assume_not_null())))
         .left_join(payments::table.on(payments::sale_id.eq(sales::id.assume_not_null())))
-        .inner_join(products::table.on(products::id.eq(sale_items::product_id.nullable())))
+        .inner_join(products::table.on(products::id.eq(sale_items::product_id.assume_not_null())))
         .into_boxed();
-
+    //TODO: no estoy usando la tabla de payments
     // aplicar filtros igual que abajo...
     if let Some(f) = &fecha {
     count_query = count_query.filter(sales::fecha.like(format!("%{}%", f)));
@@ -52,7 +52,7 @@ pub fn list_sales_paginated(
     count_query = count_query.filter(sales::estado.eq(e));
     }
     if let Some(fp) = &forma_pago {
-    count_query = count_query.filter(payments::forma_pago.eq(fp));
+    count_query = count_query.filter(sales::forma_pago.eq(fp));
     }
 
     // obtener conteo
@@ -62,7 +62,7 @@ pub fn list_sales_paginated(
     let mut data_query = sales::table
         .inner_join(sale_items::table.on(sale_items::sale_id.eq(sales::id.assume_not_null())))
         .left_join(payments::table.on(payments::sale_id.eq(sales::id.assume_not_null())))
-        .inner_join(products::table.on(products::id.eq(sale_items::product_id.nullable())))
+        .inner_join(products::table.on(products::id.eq(sale_items::product_id.assume_not_null())))
         .select((
         sales::id,
         sales::fecha,
@@ -70,7 +70,7 @@ pub fn list_sales_paginated(
         sale_items::precio_unitario,
         sale_items::costo_unitario,
         sales::estado,
-        payments::forma_pago.nullable(),
+        sales::forma_pago.nullable(),
         products::nombre.nullable(),
         ))
         .into_boxed();
@@ -90,7 +90,7 @@ pub fn list_sales_paginated(
     let results = data_query
         .limit(PAGE_SIZE)
         .offset((page - 1) * PAGE_SIZE)
-        .load::<(Option<i32>, String, i32, f32, f32, String, Option<String>, Option<String>)>(&mut conn)
+        .load::<(i32, String, i32, f32, f32, String, Option<String>, Option<String>)>(&mut conn)
         .map_err(|e| e.to_string())?;
 
 

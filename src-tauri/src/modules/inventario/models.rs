@@ -6,7 +6,7 @@ use crate::schema::combos;
 #[derive(Queryable, Selectable, Serialize, Deserialize)]
 #[diesel(table_name = products)]
 pub struct Product {
-    pub id: Option<i32>,
+    pub id: i32,
     pub nombre: String,
     pub sku: Option<String>,
     pub descripcion: Option<String>,

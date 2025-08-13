@@ -6,6 +6,7 @@ use modules::usuarios::auth;
 use modules::usuarios::usuarios::*;
 use modules::inventario::inventario::*;
 use modules::ventas::historial_ventas::*;
+use modules::ventas::venta::*;
 use modules::inventario::combos::*;
 use crate::modules::usuarios::auth::UserInfo;
 use tauri_plugin_dialog::init as dialog_plugin;
@@ -45,6 +46,12 @@ pub fn run() {
             create_combo,
             update_combo,
             delete_combo,
+            list_active_combos,
+            list_products_in_stock,
+            create_sale,
+            get_sale,
+            update_sale_status,
+            delete_sale_soft
             ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

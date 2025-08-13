@@ -2,3 +2,5 @@
 //que se notifique primero que eso va a pasar
 //TODO: verificar que en verdad, la logica que modifique en labase de datos, la pueda usar en la logica del orm
 pub mod historial_ventas;
+pub mod venta;
+pub mod models;

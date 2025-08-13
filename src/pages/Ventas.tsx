@@ -43,6 +43,7 @@ export default function Ventas() {
       setVentas(res.data);
       setTotalPages(res.total_pages);
       setCurrentPage(res.current_page);
+      console.log(res)
     } catch (err) {
       console.error('Error cargando ventas:', err);
     }
@@ -53,7 +54,7 @@ export default function Ventas() {
   }, [filterFecha, filterEstado, filterPago]);
 
   const estadoLabel = (e: string) => {
-    if (e === 'pagado') return '✅ Pagado';
+    if (e === 'completada') return '✅ Pagado';
     if (e === 'pendiente') return '⏳ Pendiente';
     return '❌ Anulado';
   };
@@ -111,7 +112,7 @@ export default function Ventas() {
         </thead>
         <tbody>
           {ventas.map(v => (
-            <tr key={v.id || `${v.fecha}-${v.producto}`}>
+            <tr key={v.id +'-' + `${v.fecha}-${v.producto}`}>
               <td>{v.fecha}</td>
               <td>{v.producto || '-'}</td>
               <td className="quantity">{v.cantidad}</td>
