@@ -1,26 +1,48 @@
 // src/pages/VentaNueva.tsx
 import { useNavigate } from 'react-router-dom';
 import { useNuevaVenta } from '../modules/ventas/hooks/VentasEmpleadoHooks';
+import { confirm as dialogConfirm } from '@tauri-apps/plugin-dialog';
 import '../modules/ventas/styles/ventas.css';
+import { useAuthStore } from '../store/useAuthStore';
 
 export default function VentaNueva() {
   const navigate = useNavigate();
-
+  const userId = useAuthStore(state => state.user_id);
   const {
     combos, products,
     selCombo, setSelCombo, cantCombo, setCantCombo, addCombo,
     selProduct, setSelProduct, cantProd, setCantProd, addProduct,
     cart, removeLine,
     pago, setPago, cashReceived, setCashReceived,
-    total, change,
+    total,
     confirmSale, confirmDisabled, reset,
-  } = useNuevaVenta({ userId: 1 }); // TODO: reemplazar con userId real de tu store
+  } = useNuevaVenta({ userId }); // TODO: reemplazar con userId real de tu store
 
   const handleConfirm = async () => {
+    console.log({ userId });
+    const seguro = await dialogConfirm("¿Está seguro de confirmar la venta?", {
+      title: "Confirmar venta",
+      kind: "warning",
+      okLabel: "Sí",
+      cancelLabel: "Cancelar",
+    });
+    
+    if (!seguro) return;
+
     try {
+
+      if (pago === 'efectivo') {
+        const received = typeof cashReceived === 'number' ? cashReceived : 0;
+        if (received < total) {
+          alert('El efectivo recibido no puede ser menor al total.');
+          return;
+        }
+      }
+      
       const res = await confirmSale();
       if (!res) return;
 
+    
       const msg = pago === 'efectivo' && res.change > 0
         ? `Venta realizada. Cambio: $${res.change.toFixed(2)}`
         : 'Venta realizada exitosamente';
@@ -60,7 +82,7 @@ export default function VentaNueva() {
 
       {/* PRODUCTOS */}
       <section className="filtros">
-        <strong>Productos</strong>
+        <strong style={{marginRight: "2.5rem"}}>Productos</strong>
         <select value={selProduct} onChange={e => setSelProduct(e.target.value ? Number(e.target.value) : '')}>
           <option value="">Seleccione producto</option>
           {products.filter(p => p.quantity > 0).map(p => (
@@ -141,7 +163,6 @@ export default function VentaNueva() {
             <label>Recibido: </label>
             <input
               type="number"
-              min={total.toFixed(2)}
               step="0.01"
               value={cashReceived === '' ? '' : cashReceived}
               onChange={e => {
@@ -149,11 +170,6 @@ export default function VentaNueva() {
                 if (raw === '') { setCashReceived(''); return; }
                 const parsed = parseFloat(raw.replace(',', '.'));
                 if (!Number.isNaN(parsed)) setCashReceived(parsed);
-              }}
-              onBlur={() => {
-                if (typeof cashReceived === 'number' && cashReceived < total) {
-                  setCashReceived(parseFloat(total.toFixed(2)));
-                }
               }}
               style={{ width: 120, marginLeft: 6 }}
             />

@@ -13,7 +13,7 @@ export type CartItem =
 type Pago = 'efectivo' | 'tarjeta' | 'transferencia' | 'mercado_pago';
 
 // —— Hook ——
-export function useNuevaVenta(opts?: { userId?: number }) {
+export function useNuevaVenta(opts?: { userId?: number| null }) {
   const userId = opts?.userId ?? 1; // trae de tu store si querés
 
   // catálogos
@@ -106,7 +106,7 @@ export function useNuevaVenta(opts?: { userId?: number }) {
   const removeLine = (index: number) =>
     setCart(prev => prev.filter((_, i) => i !== index));
 
-  const reset = () => {
+  const reset = async () => {
     setCart([]);
     setCashReceived('');
     setPago('efectivo');
@@ -114,14 +114,16 @@ export function useNuevaVenta(opts?: { userId?: number }) {
     setSelProduct('');
     setCantCombo(1);
     setCantProd(1);
+    await loadProducts();
   };
 
   // confirmación
-  const confirmDisabled =
-    !cart.length || (pago === 'efectivo' && (typeof cashReceived !== 'number' || cashReceived < total));
+  const confirmDisabled = !cart.length;
+    //!cart.length || (pago === 'efectivo' && (typeof cashReceived !== 'number' || cashReceived < total));
 
   const confirmSale = async () => {
-    if (confirmDisabled) return;
+
+    if (!cart.length) return;
 
     const items = cart.map(it =>
       it.kind === 'product'

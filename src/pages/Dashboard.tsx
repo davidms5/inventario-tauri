@@ -10,6 +10,8 @@ export default function Dashboard() {
     const handleLogout = () => {
     // Acá podés agregar limpiar estado global o sesión
         useAuthStore.getState().setUser(null);
+        useAuthStore.getState().setRol(null);
+        useAuthStore.getState().setUserId(null);
         navigate('/login', { replace: true });
     };
 

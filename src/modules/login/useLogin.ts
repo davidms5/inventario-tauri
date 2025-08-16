@@ -12,6 +12,7 @@ export function useLogin(onLogin: (username: string) => void) {
   const [error, setError] = useState('');
   const navigate = useNavigate();
   const setRol = useAuthStore((state) => state.setRol);
+  const setUserId = useAuthStore((state) => state.setUserId);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,6 +37,7 @@ export function useLogin(onLogin: (username: string) => void) {
       if (success) {
         onLogin(success.username);
         setRol(success.rol);
+        setUserId(success.id);
         console.log(success)
         navigate("/dashboard");
       } else {
