@@ -51,7 +51,10 @@ pub fn run() {
             create_sale,
             get_sale,
             update_sale_status,
-            delete_sale_soft
+            delete_sale_soft,
+            get_combo_with_items,
+            create_combo_with_items,
+            update_combo_with_items,
             ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

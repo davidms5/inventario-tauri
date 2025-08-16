@@ -10,7 +10,7 @@ use bcrypt::{hash, DEFAULT_COST};
 
 #[derive(Queryable, Serialize, Deserialize)]
 pub struct User {
-    pub id: Option<i32>,
+    pub id: i32,
     pub username: String,
     pub rol: Option<String>,
 }

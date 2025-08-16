@@ -19,6 +19,14 @@ diesel::table! {
 }
 
 diesel::table! {
+    intentos_fallidos (username, fecha) {
+        username -> Text,
+        intentos -> Integer,
+        fecha -> Text,
+    }
+}
+
+diesel::table! {
     payments (id) {
         id -> Nullable<Integer>,
         sale_id -> Integer,
@@ -69,7 +77,7 @@ diesel::table! {
 
 diesel::table! {
     users (id) {
-        id -> Nullable<Integer>,
+        id -> Integer,
         username -> Text,
         password_hash -> Text,
         created_at -> Nullable<Timestamp>,
@@ -89,6 +97,7 @@ diesel::joinable!(sales -> users (user_id));
 diesel::allow_tables_to_appear_in_same_query!(
     combo_items,
     combos,
+    intentos_fallidos,
     payments,
     products,
     sale_items,
