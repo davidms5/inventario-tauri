@@ -20,6 +20,9 @@ export function useNuevaVenta(opts?: { userId?: number| null }) {
   const [combos, setCombos] = useState<Combo[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
 
+  // búsqueda
+  const [searchTerm, setSearchTerm] = useState('');
+
   // selección para agregar
   const [selCombo, setSelCombo] = useState<number | ''>('');
   const [selProduct, setSelProduct] = useState<number | ''>('');
@@ -38,15 +41,23 @@ export function useNuevaVenta(opts?: { userId?: number| null }) {
     const res = await invoke<Combo[]>('list_active_combos');
     setCombos(res);
   };
-  const loadProducts = async () => {
-    // o 'list_products' si no filtrás por stock en backend
-    const res = await invoke<Product[]>('list_products_in_stock');
+  // BUSCAR productos
+  const searchProducts = async () => {
+    const q = searchTerm.trim();
+    if (q.length < 1) {         // puedes ajustar el mínimo
+      setProducts([]);
+      setSelProduct('');
+      return;
+    }
+    const res = await invoke<Product[]>('search_products_in_stock', { query: q });
     setProducts(res);
+    setSelProduct('');
+    setCantProd(1);
   };
 
   useEffect(() => {
     loadCombos();
-    loadProducts();
+    //loadProducts();
   }, []);
 
   // totales
@@ -114,7 +125,7 @@ export function useNuevaVenta(opts?: { userId?: number| null }) {
     setSelProduct('');
     setCantCombo(1);
     setCantProd(1);
-    await loadProducts();
+    //await loadProducts();
   };
 
   // confirmación
@@ -132,9 +143,10 @@ export function useNuevaVenta(opts?: { userId?: number| null }) {
     );
 
     const payload = { user_id: userId, forma_pago: pago, items };
-    await invoke<number>('create_sale', { payload });
+    const sale_id = await invoke<number>('create_sale', { payload });
 
     return {
+      sale_id,
       total,
       change: pago === 'efectivo' ? change : 0,
     };
@@ -142,8 +154,9 @@ export function useNuevaVenta(opts?: { userId?: number| null }) {
 
   return {
     // catálogos
-    combos, products, loadCombos, loadProducts,
-
+    combos, products, loadCombos,
+    // búsqueda
+    searchTerm, setSearchTerm, searchProducts,
     // selección
     selCombo, setSelCombo, cantCombo, setCantCombo,
     selProduct, setSelProduct, cantProd, setCantProd,

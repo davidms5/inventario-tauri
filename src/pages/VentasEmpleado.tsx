@@ -2,8 +2,10 @@
 import { useNavigate } from 'react-router-dom';
 import { useNuevaVenta } from '../modules/ventas/hooks/VentasEmpleadoHooks';
 import { confirm as dialogConfirm } from '@tauri-apps/plugin-dialog';
-import '../modules/ventas/styles/ventas.css';
 import { useAuthStore } from '../store/useAuthStore';
+import "../modules/ventas/styles/ventasEmpleados.css";
+import { invoke } from '@tauri-apps/api/core';
+import { generateAndSaveSalePdf } from '../modules/ventas/utils/pdf';
 
 export default function VentaNueva() {
   const navigate = useNavigate();
@@ -15,11 +17,11 @@ export default function VentaNueva() {
     cart, removeLine,
     pago, setPago, cashReceived, setCashReceived,
     total,
-    confirmSale, confirmDisabled, reset,
-  } = useNuevaVenta({ userId }); // TODO: reemplazar con userId real de tu store
+    confirmSale, confirmDisabled, reset, searchTerm, setSearchTerm, searchProducts
+  } = useNuevaVenta({ userId });
 
   const handleConfirm = async () => {
-    console.log({ userId });
+    //console.log({ userId });
     const seguro = await dialogConfirm("¿Está seguro de confirmar la venta?", {
       title: "Confirmar venta",
       kind: "warning",
@@ -46,8 +48,13 @@ export default function VentaNueva() {
       const msg = pago === 'efectivo' && res.change > 0
         ? `Venta realizada. Cambio: $${res.change.toFixed(2)}`
         : 'Venta realizada exitosamente';
-
+      
+        // Traemos la venta con sus items para imprimir
+      const sale = await invoke<{ sale: any; items: any[] }>('get_sale', { id: res.sale_id });
+      
       alert(msg);
+      
+      await generateAndSaveSalePdf(sale, res.change);
       reset();
       navigate('/ventas');
     } catch (e) {
@@ -59,12 +66,74 @@ export default function VentaNueva() {
   return (
     <div className="ventas-container">
       <h2>Módulo de Venta — {new Date().toLocaleString()}</h2>
-      <button onClick={() => navigate('/dashboard')}>Dashboard</button>
-      <hr />
+      <button className="btn btn-outline" onClick={() => navigate('/dashboard')}>Dashboard</button>
+      
 
-      {/* COMBOS */}
-      <section className="filtros">
-        <strong>Combos activos</strong>
+      {/* PRODUCTOS */}
+
+        {/* Input de búsqueda */}
+        <div className="toolbar">
+        <input
+          type="text"
+          placeholder="Buscar por nombre o SKU"
+          value={searchTerm}
+          onChange={e => setSearchTerm(e.target.value)}
+          style={{ marginRight: 8, width: 240 }}
+        />
+        <button onClick={searchProducts} className="btn">Buscar</button>
+        </div>
+
+      <section className="section-card">
+        <div className="controls-row">
+        <strong className='label'>Productos</strong>
+
+        {/* Select vacío por defecto; se llena con el resultado */}
+        <select
+          value={selProduct}
+          onChange={e => setSelProduct(e.target.value ? Number(e.target.value) : '')}
+          style={{ marginRight: 8, minWidth: 260 }}
+        >
+          <option value="">Seleccione producto</option>
+          {products
+            .filter(p => p.quantity > 0)
+            .map(p => (
+              <option key={p.id} value={p.id}>
+                {p.nombre} — ${p.price.toFixed(2)} (stock: {p.quantity})
+              </option>
+            ))}
+        </select>
+
+        <input
+          type="number"
+          min={1}
+          value={cantProd}
+          onChange={e => {
+            const val = Math.max(1, parseInt(e.target.value || '1'));
+            const p = products.find(x => x.id === selProduct);
+            const max = p ? p.quantity : val;
+            setCantProd(Math.min(val, max));
+          }}
+          style={{ width: 90, marginRight: 8 }}
+        />
+
+        <button
+        className="btn btn-primary"
+          onClick={addProduct}
+          disabled={
+            !selProduct ||
+            !products.find(p => p.id === selProduct && p.quantity > 0) ||
+            cantProd <= 0
+          }
+        >
+          Agregar producto
+        </button>
+        </div>
+      </section>
+        
+            {/* COMBOS */}
+      <section className="section-card">
+        <div className="controls-row">
+        <strong className='label'>Combos activos</strong>
         <select value={selCombo} onChange={e => setSelCombo(e.target.value ? Number(e.target.value) : '')}>
           <option value="">Seleccione combo</option>
           {combos.map(c => (
@@ -78,36 +147,7 @@ export default function VentaNueva() {
           onChange={e => setCantCombo(Math.max(1, parseInt(e.target.value || '1')))}
         />
         <button onClick={addCombo}>Agregar combo</button>
-      </section>
-
-      {/* PRODUCTOS */}
-      <section className="filtros">
-        <strong style={{marginRight: "2.5rem"}}>Productos</strong>
-        <select value={selProduct} onChange={e => setSelProduct(e.target.value ? Number(e.target.value) : '')}>
-          <option value="">Seleccione producto</option>
-          {products.filter(p => p.quantity > 0).map(p => (
-            <option key={p.id} value={p.id}>
-              {p.nombre} — ${p.price.toFixed(2)} (stock: {p.quantity})
-            </option>
-          ))}
-        </select>
-        <input
-          type="number"
-          min={1}
-          value={cantProd}
-          onChange={e => {
-            const val = Math.max(1, parseInt(e.target.value || '1'));
-            const p = products.find(x => x.id === selProduct);
-            const max = p ? p.quantity : val;
-            setCantProd(Math.min(val, max));
-          }}
-        />
-        <button
-          onClick={addProduct}
-          disabled={!selProduct || !products.find(p => p.id === selProduct && p.quantity > 0) || cantProd <= 0}
-        >
-          Agregar producto
-        </button>
+        </div>
       </section>
 
       {/* Carrito */}
@@ -142,7 +182,7 @@ export default function VentaNueva() {
       </table>
 
       {/* Pago */}
-      <div style={{ marginTop: '1rem' }}>
+      <div className='pay-row'>
         <label>Forma de pago: </label>
         <select
           value={pago}

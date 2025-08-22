@@ -1,3 +1,4 @@
+use diesel::sql_types::Integer;
 // src/modules/ventas/sales.rs
 use diesel::{prelude::*, RunQueryDsl, ExpressionMethods, QueryDsl};
 use chrono::Utc;
@@ -166,16 +167,55 @@ pub fn create_sale(payload: NewSaleRequest) -> Result<i32, String> {
 
 
 #[tauri::command]
-pub fn get_sale(id: i32) -> Result<SaleWithItems, String> {
+pub fn get_sale(id: i32) -> Result<SaleWithItemsNamed, String> {
     let mut conn = get_conn();
 
     let sale: Sale = sales::table.find(id).first(&mut conn).map_err(|e| e.to_string())?;
-    let items: Vec<SaleItem> = sale_items::table
-        .filter(sale_items::sale_id.eq(id))
-        .load(&mut conn)
+
+       use crate::schema::sale_items as SI;
+    use crate::schema::products as P;
+    use crate::schema::combos as C;
+
+    // LEFT JOIN + seleccionar nombres como columnas nullable
+    let rows = SI::table
+        .left_join(P::table.on(SI::product_id.eq(P::id.nullable())))
+        .left_join(C::table.on(SI::combo_id.eq(C::id.nullable())))
+        .filter(SI::sale_id.eq(id))
+        .select((
+            SI::id,
+            SI::sale_id,
+            SI::product_id,
+            SI::combo_id,
+            SI::cantidad,
+            SI::precio_unitario,
+            SI::costo_unitario,
+            P::nombre.nullable(), // <- importante por LEFT JOIN
+            C::nombre.nullable(), // <- importante por LEFT JOIN
+        ))
+        .load::<(
+            i32,                // id
+            i32,                // sale_id
+            Option<i32>,        // product_id
+            Option<i32>,        // combo_id
+            i32,                // cantidad
+            f32,                // precio_unitario
+            f32,                // costo_unitario
+            Option<String>,     // nombre producto
+            Option<String>,     // nombre combo
+        )>(&mut conn)
         .map_err(|e| e.to_string())?;
 
-    Ok(SaleWithItems { sale, items })
+    let items = rows
+        .into_iter()
+        .map(|(id, sale_id, product_id, combo_id, cantidad, precio_unitario, costo_unitario, p_nombre, c_nombre)| {
+            let nombre = p_nombre.or(c_nombre).unwrap_or_else(|| "Ítem".to_string());
+            SaleItemNamed {
+                id, sale_id, product_id, combo_id, cantidad, precio_unitario, costo_unitario, nombre
+            }
+        })
+        .collect::<Vec<_>>();
+
+    Ok(SaleWithItemsNamed { sale, items })
 }
 
 /// Anular / cambiar estado de venta

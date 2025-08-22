@@ -1,0 +1,64 @@
+
+.ventas-container{
+  max-width:1100px; margin:0 auto; padding:24px;
+  display:flex; flex-direction:column; gap:16px;
+}
+
+h2{ margin:0 0 4px; font-weight:800; letter-spacing:.2px; }
+
+.btn{
+  border:1px solid var(--border); background:var(--surface-2);
+  color:black; padding:10px 14px; border-radius:12px;
+  cursor:pointer; transition:transform .05s ease, background .2s ease, border-color .2s;
+}
+.btn:hover{ background:#2a2f38; }
+.btn:active{ transform:translateY(1px); }
+.btn-primary{ background:var(--primary); border-color:transparent; color:#fff; }
+.btn-outline{ background:transparent; background-color:azure;}
+
+.input,.select{
+  background:var(--surface-2); border:1px solid var(--border); color:var(--text);
+  padding:10px 12px; border-radius:12px; min-height:40px;
+}
+.input::placeholder{ color:var(--muted); }
+.input:focus,.select:focus{
+  outline:none; border-color:var(--primary); box-shadow:0 0 0 3px rgba(91,140,255,.25);
+}
+
+.toolbar{
+  display:flex; gap:12px; align-items:center; flex-wrap:wrap;
+  background:#c6c7ca; border:1px solid #2b2f36; border-radius: 16px;
+  padding:12px; box-shadow:0 6px 16px rgba(0,0,0,.25);
+}
+
+.section-card{
+  background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+  padding:12px; box-shadow:0 8px 18px rgba(0,0,0,.28); 
+}
+.controls-row{ display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+.label{ color:var(--muted); font-weight:600; letter-spacing:.2px; }
+
+.kpi-row{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; }
+.kpi-card{
+  background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+  padding:16px; text-align:center; box-shadow:0 8px 18px rgba(0,0,0,.28);
+}
+.kpi-card h3{ color:var(--muted); margin:0 0 6px; font-weight:600; }
+.kpi-card p{ font-size:1.6rem; margin:0; }
+
+.report-table{
+  width:100%; border-collapse:separate; border-spacing:0;
+  border:1px solid var(--border); border-radius:12px; overflow:hidden;
+}
+.report-table th,.report-table td{ padding:10px 12px; border-bottom:1px solid var(--border); }
+.report-table thead th{ background:var(--surface-2); text-align:left; font-weight:700; }
+.report-table tbody tr:hover{ background:rgba(160, 156, 156, 0.03); }
+.report-table tfoot td{ background:var(--surface-2); font-weight:700; }
+
+.pay-row{ display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+.w-120{ width:120px; }
+
+@media (max-width:860px){
+  .kpi-row{ grid-template-columns:1fr; }
+  .ventas-container{ padding:16px; }
+}

@@ -36,7 +36,7 @@ pub fn run() {
             delete_user,
             list_users,
             update_user,
-            list_products,
+            list_products_paginated,
             create_product,
             update_product,
             delete_product,
@@ -55,6 +55,7 @@ pub fn run() {
             get_combo_with_items,
             create_combo_with_items,
             update_combo_with_items,
+            search_products_in_stock
             ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

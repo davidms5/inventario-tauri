@@ -1,6 +1,6 @@
 // src/modules/ventas/models.rs
 use serde::{Deserialize, Serialize};
-use diesel::prelude::*;
+use diesel::{dsl::Nullable, prelude::*, sql_types::{Float, Integer, Text}};
 use crate::schema::{sales, sale_items};
 
 #[derive(Queryable, Identifiable, Serialize)]
@@ -82,4 +82,24 @@ pub struct SaleWithItems {
 pub struct LastInsertId {
     #[sql_type = "diesel::sql_types::Integer"]
     pub id: i32,
+}
+
+// === DTOs que devolverás al front ===
+#[derive(serde::Serialize)]
+pub struct SaleWithItemsNamed {
+    pub sale: Sale,
+    pub items: Vec<SaleItemNamed>,
+}
+
+#[derive(serde::Serialize)]
+pub struct SaleItemNamed {
+    pub id: i32,
+    pub sale_id: i32,
+    pub product_id: Option<i32>,
+    pub combo_id: Option<i32>,
+    pub cantidad: i32,
+    pub precio_unitario: f32,
+    pub costo_unitario: f32,
+    pub nombre: String,
+    //pub kind: &'static str, // "product" o "combo"
 }

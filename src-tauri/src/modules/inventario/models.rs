@@ -90,3 +90,12 @@ pub struct ComboWithItemsView {
     pub id: i32, pub nombre: String, pub descripcion: Option<String>,
     pub price: f32, pub enabled: bool, pub items: Vec<ComboItemView>,
 }
+
+#[derive(Serialize)]
+pub struct Page<T> {
+    pub data: Vec<T>,
+    pub total: i64,
+    pub total_pages: i64,
+    pub current_page: i64,
+    pub per_page: i64,
+}
