@@ -19,6 +19,26 @@ diesel::table! {
 }
 
 diesel::table! {
+    daily_closure_totals (id) {
+        id -> Integer,
+        closure_id -> Integer,
+        forma_pago -> Text,
+        monto -> Float,
+    }
+}
+
+diesel::table! {
+    daily_closures (id) {
+        id -> Integer,
+        fecha -> Text,
+        total -> Float,
+        ventas_count -> Integer,
+        created_by -> Integer,
+        created_at -> Text,
+    }
+}
+
+diesel::table! {
     intentos_fallidos (username, fecha) {
         username -> Text,
         intentos -> Integer,
@@ -88,6 +108,8 @@ diesel::table! {
 
 diesel::joinable!(combo_items -> combos (combo_id));
 diesel::joinable!(combo_items -> products (product_id));
+diesel::joinable!(daily_closure_totals -> daily_closures (closure_id));
+diesel::joinable!(daily_closures -> users (created_by));
 diesel::joinable!(payments -> sales (sale_id));
 diesel::joinable!(sale_items -> combos (combo_id));
 diesel::joinable!(sale_items -> products (product_id));
@@ -97,6 +119,8 @@ diesel::joinable!(sales -> users (user_id));
 diesel::allow_tables_to_appear_in_same_query!(
     combo_items,
     combos,
+    daily_closure_totals,
+    daily_closures,
     intentos_fallidos,
     payments,
     products,

@@ -1,4 +1,4 @@
-use diesel::sql_types::Integer;
+
 // src/modules/ventas/sales.rs
 use diesel::{prelude::*, RunQueryDsl, ExpressionMethods, QueryDsl};
 use chrono::Utc;

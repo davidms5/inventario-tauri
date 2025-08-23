@@ -8,6 +8,7 @@ use modules::inventario::inventario::*;
 use modules::ventas::historial_ventas::*;
 use modules::ventas::venta::*;
 use modules::inventario::combos::*;
+use modules::cierres::cierres::*;
 use crate::modules::usuarios::auth::UserInfo;
 use tauri_plugin_dialog::init as dialog_plugin;
 use tauri_plugin_fs::init as fs_plugin;
@@ -55,7 +56,10 @@ pub fn run() {
             get_combo_with_items,
             create_combo_with_items,
             update_combo_with_items,
-            search_products_in_stock
+            search_products_in_stock,
+            preview_daily_closure,
+            create_daily_closure,
+            list_daily_closures,
             ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
