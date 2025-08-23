@@ -1,0 +1,14 @@
+.section-card { background:#1f2937; border-radius:12px; padding:16px; margin:16px 0; box-shadow:0 6px 24px rgba(0,0,0,.25); }
+.controls-row { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+.label { font-weight:600; min-width:110px; }
+.btn { padding:8px 14px; border-radius:10px; border:1px solid #374151; background:#374151; color:#fff; cursor:pointer; }
+.btn:hover { filter:brightness(1.1); }
+.btn-primary { background:#2563eb; border-color:#2563eb; }
+.btn-outline { background:transparent; border-color:#6b7280; color:#e5e7eb; }
+.dashboard-kpi { display:flex; gap:12px; }
+.kpi-card { background:#0b73cc; color:#fff; padding:12px; border-radius:10px; min-width:160px; text-align:center; }
+.report-table { width:100%; border-collapse:collapse; margin-top:12px; }
+.report-table th, .report-table td { border:1px solid #374151; padding:8px; }
+.report-table th { background:#111827; }
+.quantity { text-align:right; }
+.income { font-weight:600; }

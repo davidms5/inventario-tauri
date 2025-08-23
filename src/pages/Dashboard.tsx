@@ -31,6 +31,7 @@ export default function Dashboard() {
                 <button onClick={() => navigate("/ventas")}>nueva venta</button>
                 {rol === ADMIN && <button onClick={() => navigate("/ventas-admin")}>ventas admin</button>}
                 {rol === ADMIN && <button onClick={() => navigate("/combos")}>Combos</button>}
+                {rol === ADMIN && <button onClick={() => navigate("/cierres-diarios")}>Cierres diarios</button>}
                 <button className={styles['logout-button']}  onClick={handleLogout} style={{ marginLeft: '10px' }}>
                     Logout
                 </button>

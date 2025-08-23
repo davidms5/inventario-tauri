@@ -11,6 +11,7 @@ import Inventario from './pages/Inventario';
 import Ventas from './pages/Ventas';
 import Combos from './pages/Combos';
 import VentaNueva from './pages/VentasEmpleado';
+import CierresDiarios from './pages/CierresDiarios';
 
 function App() {
   //const [loggedUser, setLoggedUser] = useState<string | null>(null);
@@ -53,6 +54,11 @@ function App() {
         <Route
           path="/ventas"
           element={user ? <VentaNueva /> : <Navigate to="/dashboard" replace />}/>
+
+        <Route 
+          path="/cierres-diarios"
+          element={user && rol === ADMIN ? <CierresDiarios /> : <Navigate to="/dashboard" replace />}
+        />
 
         <Route path="*" element={<Navigate to={user ? '/dashboard' : '/login'} replace />} />
       </Routes>
