@@ -1,6 +1,6 @@
 -- Your SQL goes here
 -- Crear tabla de ventas
-CREATE TABLE sales (
+CREATE TABLE  IF NOT EXISTS sales (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   user_id INTEGER NOT NULL REFERENCES users(id),
   fecha TEXT NOT NULL,
@@ -11,7 +11,7 @@ CREATE TABLE sales (
 );
 
 -- Detalle de ventas (productos o combos) tabla intermedia
-CREATE TABLE sale_items (
+CREATE TABLE  IF NOT EXISTS sale_items (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   sale_id INTEGER NOT NULL REFERENCES sales(id),
   product_id INTEGER REFERENCES products(id),
@@ -22,7 +22,7 @@ CREATE TABLE sale_items (
 );
 
 -- Tabla de combos
-CREATE TABLE combos (
+CREATE TABLE  IF NOT EXISTS combos (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   nombre TEXT NOT NULL,
   descripcion TEXT,
@@ -31,7 +31,7 @@ CREATE TABLE combos (
 );
 
 -- Items dentro de cada combo; tabla intermedia
-CREATE TABLE combo_items (
+CREATE TABLE  IF NOT EXISTS combo_items (
   combo_id INTEGER NOT NULL REFERENCES combos(id),
   product_id INTEGER NOT NULL REFERENCES products(id),
   cantidad INTEGER NOT NULL,
@@ -39,7 +39,7 @@ CREATE TABLE combo_items (
 );
 
 -- Opcional: historial de pagos
-CREATE TABLE payments (
+CREATE TABLE  IF NOT EXISTS payments (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   sale_id INTEGER NOT NULL REFERENCES sales(id),
   monto REAL NOT NULL,
@@ -48,7 +48,7 @@ CREATE TABLE payments (
 );
 
 -- Modificar productos para administrar activo
-ALTER TABLE products ADD COLUMN enabled BOOLEAN NOT NULL DEFAULT 1;
+-- ALTER TABLE products ADD COLUMN enabled BOOLEAN NOT NULL DEFAULT 1;
 
 -- Modificar usuarios para activar/desactivar
-ALTER TABLE users ADD COLUMN enabled_add_products BOOLEAN NOT NULL DEFAULT 1;
+-- ALTER TABLE users ADD COLUMN enabled_add_products BOOLEAN NOT NULL DEFAULT 1;

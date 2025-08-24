@@ -7,14 +7,6 @@ use crate::config::db::get_conn;
 use crate::schema::{sales, sale_items, products, combos, combo_items};
 use super::models::*;
 
-#[derive(Queryable)]
-struct ProductRow { pub id: i32, pub price: f32, pub quantity: i32 }
-
-#[derive(Queryable)]
-struct ComboRow { pub id: i32, pub price: f32, pub enabled: bool }
-
-#[derive(Queryable)]
-struct ComboItemRow { pub combo_id: i32, pub product_id: i32, pub cantidad: i32 }
 
 // Utilidad: fecha ISO corta
 fn now_ymdhms() -> String {
@@ -40,16 +32,16 @@ pub fn create_sale(payload: NewSaleRequest) -> Result<i32, String> {
         for it in &payload.items {
             if let Some(pid) = it.product_id {
                 // Producto simple
-                let pr: ProductRow = P::products
+                let (_id, price, quantity): (i32, f32, i32) = P::products
                     .filter(P::id.eq(pid))
                     .select((P::id, P::price, P::quantity))
                     .first(tx)?;
 
-                if pr.quantity < it.cantidad {
+                if quantity < it.cantidad {
                     return Err(diesel::result::Error::RollbackTransaction);
                 }
 
-                let precio_unitario = pr.price;
+                let precio_unitario = price;
                 // Si no manejas costo real, puede ser 0.0 o igual a price (ganancia 0)
                 let costo_unitario = 0.0;
 
@@ -66,35 +58,35 @@ pub fn create_sale(payload: NewSaleRequest) -> Result<i32, String> {
 
             } else if let Some(cid) = it.combo_id {
                 // Combo
-                let cr: ComboRow = C::combos
+                let (_id, price, enabled): (i32, f32, bool) = C::combos
                     .filter(C::id.eq(cid))
                     .select((C::id, C::price, C::enabled))
                     .first(tx)?;
 
-                if !cr.enabled {
+                if !enabled {
                     return Err(diesel::result::Error::RollbackTransaction);
                 }
 
                 // Chequear stock de cada producto del combo
-                let parts: Vec<ComboItemRow> = CI::combo_items
+                let parts: Vec<(i32, i32, i32)> = CI::combo_items
                     .filter(CI::combo_id.eq(cid))
                     .select((CI::combo_id, CI::product_id, CI::cantidad))
                     .load(tx)?;
 
                 // verificar stock
                 for part in &parts {
-                    let pr: ProductRow = P::products
-                        .filter(P::id.eq(part.product_id))
+                    let (_id, _price, quantity): (i32, f32, i32) = P::products
+                        .filter(P::id.eq(part.1)) // part.1 es product_id
                         .select((P::id, P::price, P::quantity))
                         .first(tx)?;
-                    let needed = part.cantidad * it.cantidad;
-                    if pr.quantity < needed {
+                    let needed = part.2 * it.cantidad; // part.2 es cantidad en combo
+                    if quantity < needed {
                         return Err(diesel::result::Error::RollbackTransaction);
                     }
                 }
 
                 // Agregar renglón de combo (una sola línea)
-                let precio_unitario = cr.price;
+                let precio_unitario = price;
                 let costo_unitario = 0.0; // si no hay costo, 0
 
                 total += precio_unitario * (it.cantidad as f32);
@@ -147,13 +139,13 @@ pub fn create_sale(payload: NewSaleRequest) -> Result<i32, String> {
                     .execute(tx)?;
             } else if let Some(cid) = it.combo_id {
                 // restar por cada producto del combo
-                let parts: Vec<ComboItemRow> = CI::combo_items
+                let parts: Vec<(i32, i32, i32)> = CI::combo_items
                     .filter(CI::combo_id.eq(cid))
                     .select((CI::combo_id, CI::product_id, CI::cantidad))
                     .load(tx)?;
                 for part in parts {
-                    let to_sub = part.cantidad * it.cantidad;
-                    diesel::update(P::products.filter(P::id.eq(part.product_id)))
+                    let to_sub = part.2 * it.cantidad; // part.2 es cantidad en combo
+                    diesel::update(P::products.filter(P::id.eq(part.1))) // part.1 es product_id
                         .set(P::quantity.eq(P::quantity - to_sub))
                         .execute(tx)?;
                 }

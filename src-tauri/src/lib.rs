@@ -12,6 +12,8 @@ use modules::cierres::cierres::*;
 use crate::modules::usuarios::auth::UserInfo;
 use tauri_plugin_dialog::init as dialog_plugin;
 use tauri_plugin_fs::init as fs_plugin;
+pub mod migrations;
+use tauri::Manager;
 
 #[tauri::command]
 fn greet(name: &str) -> String {
@@ -27,6 +29,35 @@ fn check_login(username: String, password_hash: String) -> Result<Option<UserInf
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .setup(|app| {
+
+            // 1) Carpeta de datos de la app (per-user) + archivo DB
+            // (En v2 puedes usar `app.path().app_data_dir()`; en v1 era `app.path_resolver().app_data_dir()`).
+            // Si tu template es v2, esta línea es correcta:
+            let app_dir = app
+            .path()
+            .app_data_dir()
+            .map_err(|e| format!("No se pudo resolver app_data_dir: {e}"))?;
+            std::fs::create_dir_all(&app_dir)?;
+
+            let db_path = app_dir.join("inventory.db");
+
+            // 2) Pool Diesel
+            crate::config::db::init_pool(&db_path)?;
+
+            // 3) Migraciones embebidas (primera ejecución crea tablas/esquema)
+            {
+                let mut conn = crate::config::db::get_conn(); // PooledConnection
+                crate::migrations::run(&mut conn)?;
+            }
+
+            // 4) (Opcional) sembrar admin si no existe
+            //#[cfg(feature = "bootstrap-admin")]
+            //crate::modules::usuarios::bootstrap::ensure_default_admin()
+            //    .map_err(|e| format!("bootstrap admin: {e}"))?;
+
+            Ok(())
+        })
         .plugin(tauri_plugin_opener::init())
         .plugin(dialog_plugin())
         .plugin(fs_plugin())

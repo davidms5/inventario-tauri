@@ -1,6 +1,6 @@
 // src/modules/ventas/models.rs
 use serde::{Deserialize, Serialize};
-use diesel::{dsl::Nullable, prelude::*, sql_types::{Float, Integer, Text}};
+use diesel::{prelude::*};
 use crate::schema::{sales, sale_items};
 
 #[derive(Queryable, Identifiable, Serialize)]
@@ -103,3 +103,13 @@ pub struct SaleItemNamed {
     pub nombre: String,
     //pub kind: &'static str, // "product" o "combo"
 }
+
+
+//#[derive(Queryable)]
+//pub struct ProductRow { pub id: i32, pub price: f32, pub quantity: i32 }
+
+//#[derive(Queryable)]
+//pub struct ComboRow { pub id: i32, pub price: f32, pub enabled: bool }
+
+//#[derive(Queryable)]
+//pub struct ComboItemRow { pub combo_id: i32, pub product_id: i32, pub cantidad: i32 }

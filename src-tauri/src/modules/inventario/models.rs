@@ -3,7 +3,7 @@ use diesel::prelude::*;
 use crate::schema::products;
 use crate::schema::combos;
 use crate::schema::combo_items;
-use diesel::sql_types::Integer;
+//use diesel::sql_types::Integer;
 #[derive(Queryable, Selectable, Serialize, Deserialize)]
 #[diesel(table_name = products)]
 pub struct Product {
@@ -76,11 +76,7 @@ pub struct UpdateComboWithItems {
 }
 
 // Para last_insert_rowid() en SQLite
-#[derive(QueryableByName)]
-struct LastInsertId {
-    #[diesel(sql_type = Integer)]
-    id: i32,
-}
+
 
 #[derive(Serialize)]
 pub struct ComboItemView { pub product_id: i32, pub cantidad: i32, pub product_name: String }
