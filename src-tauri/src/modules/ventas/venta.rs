@@ -1,7 +1,7 @@
 
 // src/modules/ventas/sales.rs
 use diesel::{prelude::*, RunQueryDsl, ExpressionMethods, QueryDsl};
-use chrono::Utc;
+use chrono::{Utc, Local};
 
 use crate::config::db::get_conn;
 use crate::schema::{sales, sale_items}; //, products, combos, combo_items
@@ -18,7 +18,20 @@ fn now_ymdhms() -> String {
 #[tauri::command]
 pub fn create_sale(payload: NewSaleRequest) -> Result<i32, String> {
     let mut conn = get_conn();
-    use crate::schema::{products::dsl as P, combos::dsl as C, combo_items::dsl as CI};
+    use crate::schema::{products::dsl as P, combos::dsl as C, combo_items::dsl as CI, daily_closures::dsl as DC};
+
+        // ——— BLOQUEO SI EL DÍA YA TIENE CIERRE ———
+    let today = Local::now().format("%Y-%m-%d").to_string();
+    let already_closed: Option<i32> = DC::daily_closures
+        .filter(DC::fecha.eq(&today))
+        .select(DC::id)
+        .first::<i32>(&mut conn)
+        .optional()
+        .map_err(|e| e.to_string())?;
+    if already_closed.is_some() {
+        // prefijo de error fácil de parsear en el front
+        return Err(format!("ERR_DAY_CLOSED|{}", today));
+    }
 
     // 1) PREVALIDACIÓN (sin tx): calcular requerimientos y detectar faltantes
     let mut errors = Vec::<String>::new();

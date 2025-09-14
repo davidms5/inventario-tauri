@@ -91,6 +91,7 @@ pub fn run() {
             preview_daily_closure,
             create_daily_closure,
             list_daily_closures,
+            is_date_closed
             ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

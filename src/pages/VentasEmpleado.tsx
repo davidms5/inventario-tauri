@@ -17,6 +17,14 @@ export default function VentaNueva() {
   const [prodQuery, setProdQuery] = useState("");
   const [prodOptions, setProdOptions] = useState<Product[]>([]);
   const [searchBusy, setSearchBusy] = useState(false);
+  const [isClosedToday, setIsClosedToday] = useState<boolean>(false);
+
+    useEffect(() => {
+    // chequeo al montar (y podrías re-chequear cada X mins si querés)
+    invoke<boolean>("is_date_closed", { dateYmd: null })
+      .then(setIsClosedToday)
+      .catch(() => setIsClosedToday(false));
+  }, []);
 
   // búsqueda con debounce cuando el usuario escribe
   useEffect(() => {
@@ -91,8 +99,14 @@ export default function VentaNueva() {
       await generateAndSaveSalePdf(sale, res.change);
       reset();
       navigate('/ventas');
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
+      const msg = String(e);
+      if (msg.startsWith("ERR_DAY_CLOSED")) {
+        setIsClosedToday(true);
+        alert("El cierre diario ya fue realizado. No se pueden crear más ventas hoy.");
+        return;
+      }
       alert('Error creando la venta: ' + (e as any).toString());
     }
   };
@@ -270,10 +284,22 @@ export default function VentaNueva() {
           </span>
         )}
 
-        <button style={{ marginLeft: 12 }} disabled={confirmDisabled} onClick={handleConfirm}>
+        <button style={{ marginLeft: 12 }} disabled={confirmDisabled || isClosedToday} onClick={handleConfirm}>
           Confirmar venta
         </button>
       </div>
+
+        {isClosedToday && (
+          <div className="overlay">
+            <div className="overlay-card">
+              <h3>Ventas cerradas</h3>
+              <p>El cierre diario ya fue realizado hoy. No se pueden registrar más ventas.</p>
+              <button className="btn" onClick={() => navigate("/dashboard")}>
+                Volver al menú
+              </button>
+            </div>
+          </div>
+        )}
     </div>
   );
 }

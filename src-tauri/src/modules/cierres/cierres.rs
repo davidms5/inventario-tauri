@@ -5,6 +5,7 @@ use chrono::{NaiveDate};
 use crate::config::db::get_conn;
 use crate::schema::{daily_closures, daily_closure_totals};
 use super::models::*;
+use chrono::Local;
 
 fn today_ymd() -> String {
     use chrono::Local;
@@ -181,4 +182,20 @@ pub fn list_daily_closures(month_ym: String, forma_pago: Option<String>) -> Resu
     }
 
     Ok(out)
+}
+
+#[tauri::command]
+pub fn is_date_closed(date_ymd: Option<String>) -> Result<bool, String> {
+    let mut conn = get_conn();
+    let fecha = date_ymd.unwrap_or_else(|| Local::now().format("%Y-%m-%d").to_string());
+
+    use daily_closures::dsl as DC;
+    let exists: Option<i32> = DC::daily_closures
+        .filter(DC::fecha.eq(&fecha))
+        .select(DC::id)
+        .first::<i32>(&mut conn)
+        .optional()
+        .map_err(|e| e.to_string())?;
+
+    Ok(exists.is_some())
 }
