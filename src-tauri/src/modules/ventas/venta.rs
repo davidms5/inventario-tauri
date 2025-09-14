@@ -4,9 +4,9 @@ use diesel::{prelude::*, RunQueryDsl, ExpressionMethods, QueryDsl};
 use chrono::Utc;
 
 use crate::config::db::get_conn;
-use crate::schema::{sales, sale_items, products, combos, combo_items};
+use crate::schema::{sales, sale_items}; //, products, combos, combo_items
 use super::models::*;
-
+//use std::collections::HashMap;
 
 // Utilidad: fecha ISO corta
 fn now_ymdhms() -> String {
@@ -18,94 +18,82 @@ fn now_ymdhms() -> String {
 #[tauri::command]
 pub fn create_sale(payload: NewSaleRequest) -> Result<i32, String> {
     let mut conn = get_conn();
-    conn.immediate_transaction::<_, diesel::result::Error, _>(|tx| {
-        use products::dsl as P;
-        use combos::dsl as C;
-        use combo_items::dsl as CI;
+    use crate::schema::{products::dsl as P, combos::dsl as C, combo_items::dsl as CI};
 
-        // 1) Precalcular total sumando lineas a partir de precios de DB
-        let mut total: f32 = 0.0;
+    // 1) PREVALIDACIÓN (sin tx): calcular requerimientos y detectar faltantes
+    let mut errors = Vec::<String>::new();
+    let mut total: f32 = 0.0;
 
-        // Para ir almacenando los NewSaleItem ya con valores correctos
-        let mut prepared_items: Vec<NewSaleItem> = Vec::new();
+    // Para insertar luego
+    let mut prepared: Vec<NewSaleItem> = Vec::new();
 
         for it in &payload.items {
-            if let Some(pid) = it.product_id {
-                // Producto simple
-                let (_id, price, quantity): (i32, f32, i32) = P::products
-                    .filter(P::id.eq(pid))
-                    .select((P::id, P::price, P::quantity))
-                    .first(tx)?;
+        if let Some(pid) = it.product_id {
+            let (_id, nombre, price, qty): (i32, String, f32, i32) = P::products
+                .filter(P::id.eq(pid))
+                .select((P::id, P::nombre, P::price, P::quantity))
+                .first(&mut conn)
+                .map_err(|e| e.to_string())?;
 
-                if quantity < it.cantidad {
-                    return Err(diesel::result::Error::RollbackTransaction);
-                }
-
-                let precio_unitario = price;
-                // Si no manejas costo real, puede ser 0.0 o igual a price (ganancia 0)
-                let costo_unitario = 0.0;
-
-                total += precio_unitario * (it.cantidad as f32);
-
-                prepared_items.push(NewSaleItem {
-                    sale_id: 0, // lo llenamos después
-                    product_id: Some(pid),
-                    combo_id: None,
-                    cantidad: it.cantidad,
-                    precio_unitario,
-                    costo_unitario,
-                });
-
-            } else if let Some(cid) = it.combo_id {
-                // Combo
-                let (_id, price, enabled): (i32, f32, bool) = C::combos
-                    .filter(C::id.eq(cid))
-                    .select((C::id, C::price, C::enabled))
-                    .first(tx)?;
-
-                if !enabled {
-                    return Err(diesel::result::Error::RollbackTransaction);
-                }
-
-                // Chequear stock de cada producto del combo
-                let parts: Vec<(i32, i32, i32)> = CI::combo_items
-                    .filter(CI::combo_id.eq(cid))
-                    .select((CI::combo_id, CI::product_id, CI::cantidad))
-                    .load(tx)?;
-
-                // verificar stock
-                for part in &parts {
-                    let (_id, _price, quantity): (i32, f32, i32) = P::products
-                        .filter(P::id.eq(part.1)) // part.1 es product_id
-                        .select((P::id, P::price, P::quantity))
-                        .first(tx)?;
-                    let needed = part.2 * it.cantidad; // part.2 es cantidad en combo
-                    if quantity < needed {
-                        return Err(diesel::result::Error::RollbackTransaction);
-                    }
-                }
-
-                // Agregar renglón de combo (una sola línea)
-                let precio_unitario = price;
-                let costo_unitario = 0.0; // si no hay costo, 0
-
-                total += precio_unitario * (it.cantidad as f32);
-
-                prepared_items.push(NewSaleItem {
-                    sale_id: 0,
-                    product_id: None,
-                    combo_id: Some(cid),
-                    cantidad: it.cantidad,
-                    precio_unitario,
-                    costo_unitario,
-                });
-
-            } else {
-                return Err(diesel::result::Error::RollbackTransaction);
+            if qty < it.cantidad {
+                errors.push(format!(
+                    "Stock insuficiente para '{}' (id {}): requerido {}, disponible {}",
+                    nombre, _id, it.cantidad, qty
+                ));
             }
-        }
 
-        // 2) Insertar SALE
+            total += price * it.cantidad as f32;
+            prepared.push(NewSaleItem {
+                sale_id: 0, product_id: Some(pid), combo_id: None,
+                cantidad: it.cantidad, precio_unitario: price, costo_unitario: 0.0,
+            });
+
+        } else if let Some(cid) = it.combo_id {
+            let (_id, combo_nombre, price, enabled): (i32, String, f32, bool) = C::combos
+                .filter(C::id.eq(cid))
+                .select((C::id, C::nombre, C::price, C::enabled))
+                .first(&mut conn)
+                .map_err(|e| e.to_string())?;
+            if !enabled {
+                errors.push(format!("El combo '{}' (id {}) está inactivo", combo_nombre, _id));
+            }
+
+            let parts: Vec<(i32, i32, String, i32)> = CI::combo_items
+                .inner_join(P::products)
+                .filter(CI::combo_id.eq(cid))
+                .select((CI::product_id, CI::cantidad, P::nombre, P::quantity))
+                .load(&mut conn)
+                .map_err(|e| e.to_string())?;
+
+            for (_prod_id, cant_en_combo, prod_nombre, stock_disp) in parts {
+                let needed = cant_en_combo * it.cantidad;
+                if stock_disp < needed {
+                    errors.push(format!(
+                        "'{}' del combo '{}' sin stock suficiente: requerido {}, disponible {}",
+                        prod_nombre, combo_nombre, needed, stock_disp
+                    ));
+                }
+            }
+
+            total += price * it.cantidad as f32;
+            prepared.push(NewSaleItem {
+                sale_id: 0, product_id: None, combo_id: Some(cid),
+                cantidad: it.cantidad, precio_unitario: price, costo_unitario: 0.0,
+            });
+
+        } else {
+            errors.push("Ítem inválido (sin product_id ni combo_id)".into());
+        }
+    }
+
+    
+    if !errors.is_empty() {
+        // devolvés *textual* todo lo que falta
+        return Err(errors.join("\n"));
+    }
+
+    // 2) TRANSACCIÓN: insertar venta e ítems y actualizar stock
+    let inserted_id = conn.immediate_transaction::<_, diesel::result::Error, _>(|tx| {
         let fecha = now_ymdhms();
         let new_sale = NewSale {
             user_id: payload.user_id,
@@ -119,33 +107,27 @@ pub fn create_sale(payload: NewSaleRequest) -> Result<i32, String> {
             .values(&new_sale)
             .execute(tx)?;
 
-        // SQLite devuelve i64; casteamos a i32
         let inserted_id: i32 = diesel::sql_query("SELECT last_insert_rowid() AS id")
             .get_result::<LastInsertId>(tx)?
             .id;
-        
-        // 3) Insertar ITEMS y descontar stock
-        for mut it in prepared_items {
+
+        for mut it in prepared {
             it.sale_id = inserted_id;
 
-            diesel::insert_into(sale_items::table)
-                .values(&it)
-                .execute(tx)?;
+            diesel::insert_into(sale_items::table).values(&it).execute(tx)?;
 
-            // Descontar stock
             if let Some(pid) = it.product_id {
                 diesel::update(P::products.filter(P::id.eq(pid)))
                     .set(P::quantity.eq(P::quantity - it.cantidad))
                     .execute(tx)?;
             } else if let Some(cid) = it.combo_id {
-                // restar por cada producto del combo
-                let parts: Vec<(i32, i32, i32)> = CI::combo_items
+                let parts: Vec<(i32, i32)> = CI::combo_items
+                    .select((CI::product_id, CI::cantidad))
                     .filter(CI::combo_id.eq(cid))
-                    .select((CI::combo_id, CI::product_id, CI::cantidad))
                     .load(tx)?;
-                for part in parts {
-                    let to_sub = part.2 * it.cantidad; // part.2 es cantidad en combo
-                    diesel::update(P::products.filter(P::id.eq(part.1))) // part.1 es product_id
+                for (prod_id, cant_en_combo) in parts {
+                    let to_sub = cant_en_combo * it.cantidad;
+                    diesel::update(P::products.filter(P::id.eq(prod_id)))
                         .set(P::quantity.eq(P::quantity - to_sub))
                         .execute(tx)?;
                 }
@@ -153,7 +135,9 @@ pub fn create_sale(payload: NewSaleRequest) -> Result<i32, String> {
         }
 
         Ok(inserted_id)
-    }).map_err(|e| e.to_string())
+    }).map_err(|e| e.to_string())?;
+
+    Ok(inserted_id)
 }
 
 

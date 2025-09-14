@@ -13,6 +13,7 @@ export function useLogin(onLogin: (username: string) => void) {
   const navigate = useNavigate();
   const setRol = useAuthStore((state) => state.setRol);
   const setUserId = useAuthStore((state) => state.setUserId);
+  const setEnabledAddProducts = useAuthStore((state) => state.setEnabledAddProducts);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,10 +36,11 @@ export function useLogin(onLogin: (username: string) => void) {
       const success = await invoke<UserInfo| null>('check_login', result.data);
 
       if (success) {
+        console.log('Login exitoso:', success);
         onLogin(success.username);
         setRol(success.rol);
         setUserId(success.id);
-        console.log(success)
+        setEnabledAddProducts(success.enabled_add_products);
         navigate("/dashboard");
       } else {
         setError('Usuario o contraseña incorrectos');

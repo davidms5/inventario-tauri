@@ -6,18 +6,52 @@ import { useAuthStore } from '../store/useAuthStore';
 import "../modules/ventas/styles/ventasEmpleados.css";
 import { invoke } from '@tauri-apps/api/core';
 import { generateAndSaveSalePdf } from '../modules/ventas/utils/pdf';
+import type { Product } from "../modules/ventas/hooks/VentasEmpleadoHooks";
+import { useState, useEffect } from 'react';
 
 export default function VentaNueva() {
   const navigate = useNavigate();
   const userId = useAuthStore(state => state.user_id);
+  const enabledAddProducts = useAuthStore(state => state.enabled_add_products);
+
+  const [prodQuery, setProdQuery] = useState("");
+  const [prodOptions, setProdOptions] = useState<Product[]>([]);
+  const [searchBusy, setSearchBusy] = useState(false);
+
+  // búsqueda con debounce cuando el usuario escribe
+  useEffect(() => {
+    const q = prodQuery.trim();
+
+    if (/^#\d+\s/.test(q)) return;
+
+    const t = setTimeout(async () => {
+      if (!q) { setProdOptions([]); return; }
+      try {
+        setSearchBusy(true);
+        const res = await invoke<Product[]>("search_products_in_stock", { query: q });
+        console.log("Productos encontrados:", res);
+        setProdOptions(res);
+      } finally {
+        setSearchBusy(false);
+      }
+    }, 250);
+    return () => clearTimeout(t);
+  }, [prodQuery]);
+
+  // auxiliar: extrae el ID del valor elegido (#123 Nombre)
+  const parseId = (txt: string) => {
+    const m = txt.match(/^#(\d+)\s/);
+    return m ? Number(m[1]) : null;
+  };
+
   const {
-    combos, products,
+    combos, 
     selCombo, setSelCombo, cantCombo, setCantCombo, addCombo,
-    selProduct, setSelProduct, cantProd, setCantProd, addProduct,
+     cantProd, setCantProd, addProductDirect,
     cart, removeLine,
     pago, setPago, cashReceived, setCashReceived,
     total,
-    confirmSale, confirmDisabled, reset, searchTerm, setSearchTerm, searchProducts
+    confirmSale, confirmDisabled, reset
   } = useNuevaVenta({ userId });
 
   const handleConfirm = async () => {
@@ -59,20 +93,20 @@ export default function VentaNueva() {
       navigate('/ventas');
     } catch (e) {
       console.error(e);
-      alert('Error creando la venta');
+      alert('Error creando la venta: ' + (e as any).toString());
     }
   };
 
   return (
     <div className="ventas-container">
       <h2>Módulo de Venta — {new Date().toLocaleString()}</h2>
-      <button className="btn btn-outline" onClick={() => navigate('/dashboard')}>Dashboard</button>
+      <button className="btn btn-outline" onClick={() => navigate('/dashboard')}>volver al menu principal</button>
       
 
       {/* PRODUCTOS */}
 
         {/* Input de búsqueda */}
-        <div className="toolbar">
+        {/*<div className="toolbar">
         <input
           type="text"
           placeholder="Buscar por nombre o SKU"
@@ -81,60 +115,75 @@ export default function VentaNueva() {
           style={{ marginRight: 8, width: 240 }}
         />
         <button onClick={searchProducts} className="btn">Buscar</button>
-        </div>
+        </div>*/}
 
-      <section className="section-card">
-        <div className="controls-row">
-        <strong className='label'>Productos</strong>
+<section className="section-card">
+  <div className="controls-row">
+    <strong className="label">Productos</strong>
 
-        {/* Select vacío por defecto; se llena con el resultado */}
-        <select
-          value={selProduct}
-          onChange={e => setSelProduct(e.target.value ? Number(e.target.value) : '')}
-          style={{ marginRight: 8, minWidth: 260 }}
-        >
-          <option value="">Seleccione producto</option>
-          {products
-            .filter(p => p.quantity > 0)
-            .map(p => (
-              <option key={p.id} value={p.id}>
-                {p.nombre} — ${p.price.toFixed(2)} (stock: {p.quantity})
-              </option>
-            ))}
-        </select>
+    {/* Campo único: al teclear se buscan sugerencias */}
+    <input
+      list="product-options"
+      placeholder="Buscar y seleccionar producto"
+      value={prodQuery}
+      onChange={(e) => setProdQuery(e.target.value)}
+      style={{ minWidth: 260, marginRight: 8 }}
+    />
+    <datalist id="product-options">
+      {prodOptions
+        .filter(p => p.quantity > 0) // solo con stock
+        .map(p => (
+          // mostramos "#id Nombre", así luego podemos recuperar el id
+          <option key={p.id} value={`#${p.id} ${p.nombre}`} />
+        ))
+      }
+    </datalist>
 
-        <input
-          type="number"
-          min={1}
-          value={cantProd}
-          onChange={e => {
-            const val = Math.max(1, parseInt(e.target.value || '1'));
-            const p = products.find(x => x.id === selProduct);
-            const max = p ? p.quantity : val;
-            setCantProd(Math.min(val, max));
-          }}
-          style={{ width: 90, marginRight: 8 }}
-        />
+    {/* cantidad */}
+    <input
+      type="number"
+      min={1}
+      value={cantProd}
+      onChange={e => setCantProd(Math.max(1, parseInt(e.target.value || "1")))}
+      style={{ width: 90, marginRight: 8 }}
+    />
 
-        <button
-        className="btn btn-primary"
-          onClick={addProduct}
-          disabled={
-            !selProduct ||
-            !products.find(p => p.id === selProduct && p.quantity > 0) ||
-            cantProd <= 0
-          }
-        >
-          Agregar producto
-        </button>
-        </div>
-      </section>
+    {/* agregar usando lo escrito/seleccionado en el input */}
+    <button
+      className="btn btn-primary"
+      onClick={async () => {
+          const id = parseId(prodQuery);
+          if (!id) { alert("Elegí un producto de la lista"); return; }
+
+          // Busca en las opciones actuales
+          let p = prodOptions.find(x => x.id === id);
+
+          // Fallback por si el efecto vació prodOptions:
+          //if (!p) {
+          //  try {
+          //    p = await invoke<Product | null>("get_product_in_stock_by_id", { id }) as Product | null;
+          //  } catch {}
+          //}
+
+          if (!p) { alert("No se encontró el producto seleccionado"); return; }
+          if (p.quantity <= 0) { alert("Sin stock"); return; }
+          if (cantProd > p.quantity) { alert("Cantidad supera stock"); return; }
+
+          addProductDirect(p, cantProd);
+          setProdQuery("");
+        }}
+        disabled={searchBusy || !prodQuery}
+    >
+      Agregar producto
+    </button>
+  </div>
+</section>
         
             {/* COMBOS */}
       <section className="section-card">
         <div className="controls-row">
         <strong className='label'>Combos activos</strong>
-        <select value={selCombo} onChange={e => setSelCombo(e.target.value ? Number(e.target.value) : '')}>
+        <select value={selCombo} onChange={e => setSelCombo(e.target.value ? Number(e.target.value) : '')} disabled={!enabledAddProducts} style={{ marginLeft: 8, minWidth: 260, marginRight: 8 }}>
           <option value="">Seleccione combo</option>
           {combos.map(c => (
             <option key={c.id} value={c.id}>{c.nombre} — ${c.price.toFixed(2)}</option>
@@ -145,8 +194,9 @@ export default function VentaNueva() {
           min={1}
           value={cantCombo}
           onChange={e => setCantCombo(Math.max(1, parseInt(e.target.value || '1')))}
+          disabled={!enabledAddProducts}
         />
-        <button onClick={addCombo}>Agregar combo</button>
+        <button onClick={addCombo} disabled={!enabledAddProducts}>Agregar combo</button>
         </div>
       </section>
 
@@ -154,13 +204,12 @@ export default function VentaNueva() {
       <table className="report-table">
         <thead>
           <tr>
-            <th>Tipo</th><th>Nombre</th><th>Cant.</th><th>Precio U.</th><th>Subtotal</th><th></th>
+            <th>Nombre</th><th>Cant.</th><th>Precio U.</th><th>Subtotal</th><th></th>
           </tr>
         </thead>
         <tbody>
           {cart.map((it, idx) => (
             <tr key={idx}>
-              <td>{it.kind}</td>
               <td>{it.nombre}</td>
               <td className="quantity">{it.cantidad}</td>
               <td className="price">${it.price.toFixed(2)}</td>

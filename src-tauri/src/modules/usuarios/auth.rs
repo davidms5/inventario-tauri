@@ -5,13 +5,14 @@ use crate::schema::intentos_fallidos;
 use crate::schema::users::password_hash;
 use serde::{Serialize, Deserialize};
 use bcrypt::verify;
-use crate::schema::users::dsl::{users, username, rol, id as user_id};
+use crate::schema::users::dsl::{users, username, rol, id as user_id, enabled_add_products};
 use crate::schema::intentos_fallidos::dsl as IF;
 #[derive(Serialize, Deserialize)]
 pub struct  UserInfo {
     pub username: String,
     pub rol: Option<String>,
-    pub id: i32
+    pub id: i32,
+    pub enabled_add_products: bool,
 }
 
 #[derive(Queryable)]
@@ -20,6 +21,7 @@ struct DbUser {
     pub username: String,
     pub password_hash: String,
     pub rol: Option<String>,
+    pub enabled_add_products: bool,
 }
 
 
@@ -58,7 +60,7 @@ pub fn check_login(input_username: String, input_password: String) -> Result<Opt
     let mut conn = db::get_conn();
 
     let db_user: Option<DbUser> = users
-        .select((user_id, username, password_hash, rol))
+        .select((user_id, username, password_hash, rol, enabled_add_products))
         .filter(username.eq(&input_username))
         .first::<DbUser>(&mut conn)
         .optional()
@@ -101,6 +103,7 @@ pub fn check_login(input_username: String, input_password: String) -> Result<Opt
             username: db_user.username,
             rol: db_user.rol,
             id: db_user.user_id,
+            enabled_add_products: db_user.enabled_add_products
         }))
     } else {
         let _ = log_failed_attempt(&mut conn, &input_username);

@@ -82,7 +82,7 @@ export default function CierresDiarios() {
   return (
     <div className="ventas-container">
       <h2>Cierres diarios</h2>
-      <button className="btn btn-outline" onClick={() => navigate('/dashboard')}>Dashboard</button>
+      <button className="btn btn-outline" onClick={() => navigate('/dashboard')}>volver al menu principal</button>
 
       {/* NUEVO CIERRE */}
       <section className="section-card">

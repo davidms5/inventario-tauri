@@ -62,7 +62,7 @@ export default function Ventas() {
   return (
     <div className="ventas-container">
       <h2>Módulo de Ventas</h2>
-      <button onClick={() => navigate('/dashboard')}>Dashboard</button>
+      <button onClick={() => navigate('/dashboard')}>volver al menu principal</button>
       <hr />
 
       <section className="filtros">
@@ -70,7 +70,7 @@ export default function Ventas() {
 
         <select value={filterEstado} onChange={e => setFilterEstado(e.target.value)}>
           <option value="">Todos los ESTADOS</option>
-          <option value="pagado">Pagado</option>
+          <option value="completada">Pagado</option>
           <option value="pendiente">Pendiente</option>
           <option value="anulado">Anulado</option>
         </select>

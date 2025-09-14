@@ -7,6 +7,7 @@ type User = {
   id: number;
   username: string;
   rol: string;
+  enabled_add_products: boolean;
 };
 
 export default function Usuarios() {
@@ -14,6 +15,7 @@ export default function Usuarios() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("empleado");
+  const [enabledAddProducts, setEnabledAddProducts] = useState("false");
 
   const [editUserId, setEditUserId] = useState<number | null>(null);
   const [editPassword, setEditPassword] = useState("");
@@ -24,6 +26,7 @@ export default function Usuarios() {
   const fetchUsers = async () => {
     try {
       const result = await invoke<User[]>("list_users");
+      console.log("Usuarios cargados:", result);
       setUsers(result);
     } catch (error) {
       console.error("Error cargando usuarios", error);
@@ -32,10 +35,12 @@ export default function Usuarios() {
 
   const handleCreate = async () => {
     try {
-      await invoke("create_user", { new_username: username, new_password_hash: password, new_rol: role });
+      const realValueEnabledAddProducts = enabledAddProducts === "true";
+      await invoke("create_user", { new_username: username, new_password_hash: password, new_rol: role, new_enabled_add_products: realValueEnabledAddProducts });
       setUsername("");
       setPassword("");
       setRole("empleado");
+      setEnabledAddProducts("false");
       fetchUsers();
     } catch (error) {
       console.error("Error creando usuario", error);
@@ -66,6 +71,7 @@ export default function Usuarios() {
         target_id: editUserId,
         plain_password: editPassword,
         new_rol: editRole,
+        new_enabled_add_products: enabledAddProducts === "true",
       });
 
       setEditUserId(null);
@@ -86,7 +92,7 @@ export default function Usuarios() {
       {/* Crear usuario */}
       <div className={styles['form-section']}>
         <h3>Crear Usuario</h3>
-        <button onClick={() => navigate("/dashboard")}>dashboard</button>
+        <button onClick={() => navigate("/dashboard")}>menu principal</button>
         <hr />
         <input
           type="text"
@@ -104,6 +110,11 @@ export default function Usuarios() {
           <option value="empleado">Empleado</option>
           <option value="admin">Admin</option>
         </select>
+
+        <select onChange={(e) => setEnabledAddProducts(e.target.value)}>
+            <option value="false">No puede ver combos</option>
+            <option value="true">Puede ver combos</option>
+        </select>
         <button onClick={handleCreate}>Crear</button>
       </div>
 
@@ -115,7 +126,7 @@ export default function Usuarios() {
           {users.map((user) => (
             <li key={user.id}>
               <div className={styles['user-info']}>
-                {user.username} ({user.rol})
+                {user.username} ({user.rol}) ver combos: {user.enabled_add_products ? 'sí' : 'no'}
               </div>
               
               <div className={styles['user-actions']}>
@@ -144,6 +155,10 @@ export default function Usuarios() {
           <select value={editRole} onChange={(e) => setEditRole(e.target.value)}>
             <option value="empleado">Empleado</option>
             <option value="admin">Admin</option>
+          </select>
+          <select value={enabledAddProducts} onChange={(e) => setEnabledAddProducts(e.target.value)}>
+            <option value="false">No puede ver combos</option>
+            <option value="true">Puede ver combos</option>
           </select>
           <button onClick={handleUpdate}>Guardar Cambios</button>
           <button onClick={() => setEditUserId(null)} style={{ marginLeft: "10px" }}>

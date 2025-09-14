@@ -143,6 +143,7 @@ export function useNuevaVenta(opts?: { userId?: number| null }) {
     );
 
     const payload = { user_id: userId, forma_pago: pago, items };
+    console.log({ payload });
     const sale_id = await invoke<number>('create_sale', { payload });
 
     return {
@@ -150,6 +151,22 @@ export function useNuevaVenta(opts?: { userId?: number| null }) {
       total,
       change: pago === 'efectivo' ? change : 0,
     };
+  };
+
+  const addProductDirect = (p: Product, qty: number) => {
+    if (qty <= 0) return;
+    if (qty > p.quantity) { alert('Cantidad supera el stock'); return; }
+
+    setCart(prev => {
+      const idx = prev.findIndex(it => it.kind === 'product' && it.product_id === p.id);
+      if (idx >= 0) {
+        const next = [...prev];
+        const line = next[idx] as Extract<CartItem, { kind: 'product' }>;
+        next[idx] = { ...line, cantidad: line.cantidad + qty };
+        return next;
+      }
+      return [...prev, { kind: 'product', product_id: p.id, nombre: p.nombre, cantidad: qty, price: p.price }];
+    });
   };
 
   return {
@@ -162,7 +179,7 @@ export function useNuevaVenta(opts?: { userId?: number| null }) {
     selProduct, setSelProduct, cantProd, setCantProd,
 
     // carrito
-    cart, addCombo, addProduct, removeLine,
+    cart, addCombo, addProduct, removeLine, addProductDirect,
 
     // totales
     total, change,

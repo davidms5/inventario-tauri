@@ -149,7 +149,7 @@ export default function Combos() {
     <div className="combo-container">
       <h2>Gestión de Combos</h2>
       <button onClick={() => navigate('/dashboard')} style={{ backgroundColor: "#007bff" }}>
-        dashboard
+        menu principal
       </button>
 
       <div className="form-section">

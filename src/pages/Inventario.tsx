@@ -104,7 +104,7 @@ export default function Inventario() {
     <div className={styles['inventario-container']}>
       <h2>Productos</h2>
       <div className={styles.toolbar}>
-        <button onClick={() => navigate("/dashboard")}>dashboard</button>
+        <button onClick={() => navigate("/dashboard")}>menu principal</button>
        <button onClick={() => downloadCSV()}>descargar csv</button>
       </div>
 

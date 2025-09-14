@@ -1,8 +1,8 @@
 use diesel::prelude::*;
-use crate::schema::{sales, sale_items, products, payments};
+use crate::schema::{sales, sale_items, products,combos}; // payments
 use tauri::command;
 use serde::Serialize;
-
+//use diesel::dsl::count_star;
 
 
 #[derive(Serialize)]
@@ -37,85 +37,96 @@ pub fn list_sales_paginated(
     
     let mut conn = crate::config::db::get_conn();
     const PAGE_SIZE: i64 = 10;
-    // 1. Construir consulta base para conteo
+
+    // ---------- COUNT ----------
     let mut count_query = sales::table
-        .inner_join(sale_items::table.on(sale_items::sale_id.eq(sales::id.assume_not_null())))
-        .left_join(payments::table.on(payments::sale_id.eq(sales::id.assume_not_null())))
-        .inner_join(products::table.on(products::id.eq(sale_items::product_id.assume_not_null())))
+        .inner_join(
+            sale_items::table.on(sale_items::sale_id.eq(sales::id))
+        )
         .into_boxed();
-    //TODO: no estoy usando la tabla de payments
-    // aplicar filtros igual que abajo...
+
     if let Some(f) = &fecha {
-    count_query = count_query.filter(sales::fecha.like(format!("%{}%", f)));
+        count_query = count_query.filter(sales::fecha.like(format!("%{}%", f)));
     }
     if let Some(e) = &estado {
-    count_query = count_query.filter(sales::estado.eq(e));
+        count_query = count_query.filter(sales::estado.eq(e));
     }
     if let Some(fp) = &forma_pago {
-    count_query = count_query.filter(sales::forma_pago.eq(fp));
+        // usa la columna de SALES, no PAYMENTS
+        count_query = count_query.filter(sales::forma_pago.eq(fp));
     }
 
-    // obtener conteo
-    let total_count: i64 = count_query.count().get_result(&mut conn).map_err(|e| e.to_string())?;
+    let total_count: i64 = count_query
+        .count()
+        .get_result(&mut conn)
+        .map_err(|e| e.to_string())?;
 
-    // 2. Construir otra consulta para obtener datos paginados
+    // ---------- DATA ----------
     let mut data_query = sales::table
-        .inner_join(sale_items::table.on(sale_items::sale_id.eq(sales::id.assume_not_null())))
-        .left_join(payments::table.on(payments::sale_id.eq(sales::id.assume_not_null())))
-        .inner_join(products::table.on(products::id.eq(sale_items::product_id.assume_not_null())))
+        .inner_join(
+            sale_items::table.on(sale_items::sale_id.eq(sales::id))
+        )
+        .left_outer_join(
+            products::table.on(sale_items::product_id.eq(products::id.nullable()))
+        )
+        .left_outer_join(
+            combos::table.on(sale_items::combo_id.eq(combos::id.nullable()))
+        )
         .select((
-        sales::id,
-        sales::fecha,
-        sale_items::cantidad,
-        sale_items::precio_unitario,
-        sale_items::costo_unitario,
-        sales::estado,
-        sales::forma_pago.nullable(),
-        products::nombre.nullable(),
+            sales::id,
+            sales::fecha,
+            sale_items::cantidad,
+            sale_items::precio_unitario,
+            sale_items::costo_unitario,
+            sales::estado,
+            sales::forma_pago,                  // <- de sales
+            products::nombre.nullable(),        // puede ser NULL si es combo
+            combos::nombre.nullable(),          // puede ser NULL si es producto
         ))
         .into_boxed();
 
-    // aplicar mismo filtrado
     if let Some(f) = &fecha {
-    data_query = data_query.filter(sales::fecha.like(format!("%{}%", f)));
+        data_query = data_query.filter(sales::fecha.like(format!("%{}%", f)));
     }
     if let Some(e) = &estado {
-    data_query = data_query.filter(sales::estado.eq(e));
+        data_query = data_query.filter(sales::estado.eq(e));
     }
     if let Some(fp) = &forma_pago {
-    data_query = data_query.filter(payments::forma_pago.eq(fp));
+        data_query = data_query.filter(sales::forma_pago.eq(fp)); // idem
     }
 
-    // paginar y cargar
-    let results = data_query
+    let rows = data_query
         .limit(PAGE_SIZE)
         .offset((page - 1) * PAGE_SIZE)
-        .load::<(i32, String, i32, f32, f32, String, Option<String>, Option<String>)>(&mut conn)
+        .load::<(i32, String, i32, f32, f32, String, String, Option<String>, Option<String>)>(&mut conn)
         .map_err(|e| e.to_string())?;
 
-
-    let data = results.into_iter().map(|(id, fecha, cantidad, pu, cu, estado_s, fp, producto)| {
-        let ingresos = pu * cantidad as f32;
-        let costo_total = cu * cantidad as f32;
-        let ganancia = ingresos - costo_total;
-        VentaDetalle {
-            id,
-            fecha,
-            producto,
-            cantidad,
-            precio_unitario: pu,
-            ingresos,
-            costo_unitario: cu,
-            costo_total,
-            ganancia,
-            estado: estado_s,
-            forma_pago: fp,
-        }
-    }).collect();
+    let data = rows
+        .into_iter()
+        .map(|(id, fecha, cantidad, pu, cu, estado_s, fp, nombre_prod, nombre_combo)| {
+            let nombre = nombre_prod.or(nombre_combo).unwrap_or_else(|| "-".to_string());
+            let ingresos = pu * cantidad as f32;
+            let costo_total = cu * cantidad as f32;
+            let ganancia = ingresos - costo_total;
+            VentaDetalle {
+                id: id,
+                fecha,
+                producto: Some(nombre),
+                cantidad,
+                precio_unitario: pu,
+                ingresos,
+                costo_unitario: cu,
+                costo_total,
+                ganancia,
+                estado: estado_s,
+                forma_pago: Some(fp),
+            }
+        })
+        .collect();
 
     Ok(PaginatedVentas {
         data,
-        total_pages: (total_count + PAGE_SIZE - 1) / PAGE_SIZE,
+        total_pages: ((total_count + PAGE_SIZE - 1) / PAGE_SIZE).max(1),
         current_page: page,
     })
 }
