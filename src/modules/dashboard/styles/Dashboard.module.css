@@ -43,3 +43,24 @@
 .logout-button:hover {
   background-color: #b52a3c;
 }
+
+.overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,.45);
+  display: flex; align-items: center; justify-content: center; z-index: 1000;
+}
+.overlayCard {
+  background: #1d1f24; color: #fff; border-radius: 12px; padding: 16px;
+  width: 720px; max-width: 92vw; box-shadow: 0 10px 30px rgba(0,0,0,.4);
+}
+.overlayHeader { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.resumenGrid {
+  display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px;
+}
+.kpiCard {
+  background: #2a2d33; border-radius: 10px; padding: 14px;
+}
+.kpiLabel { font-size: 12px; opacity: .75; margin-bottom: 6px; }
+.kpiValue { font-size: 24px; font-weight: 700; }
+.kpiSpan { grid-column: 1 / -1; background: #2a2d33; border-radius: 10px; padding: 14px; }
+.reportTable { width: 100%; border-collapse: collapse; }
+.reportTable th, .reportTable td { padding: 8px; border-bottom: 1px solid rgba(255,255,255,.08); text-align: left; }

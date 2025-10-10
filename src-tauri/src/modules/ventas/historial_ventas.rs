@@ -1,30 +1,12 @@
-use diesel::prelude::*;
-use crate::schema::{sales, sale_items, products,combos}; // payments
+use diesel::{dsl::count_star, prelude::*, dsl::sum};
+use crate::schema::{sales, sale_items, products, combos, payments}; // payments
 use tauri::command;
-use serde::Serialize;
+use super::models::*;
 //use diesel::dsl::count_star;
 
-
-#[derive(Serialize)]
-pub struct VentaDetalle {
-    pub id: i32,
-    pub fecha: String,
-    pub producto: Option<String>, // puede venir de sale_items
-    pub cantidad: i32,
-    pub precio_unitario: f32,
-    pub ingresos: f32,
-    pub costo_unitario: f32,
-    pub costo_total: f32,
-    pub ganancia: f32,
-    pub estado: String,
-    pub forma_pago: Option<String>,
-}
-
-#[derive(Serialize)]
-pub struct PaginatedVentas {
-    pub data: Vec<VentaDetalle>,
-    pub total_pages: i64,
-    pub current_page: i64,
+fn today_ymd() -> String {
+    use chrono::Local;
+    Local::now().format("%Y-%m-%d").to_string()
 }
 
 #[command]
@@ -129,4 +111,36 @@ pub fn list_sales_paginated(
         total_pages: ((total_count + PAGE_SIZE - 1) / PAGE_SIZE).max(1),
         current_page: page,
     })
+}
+
+#[command]
+pub fn get_today_sales_summary() -> Result<TodaySummary, String> {
+    let mut conn = crate::config::db::get_conn();
+    let today = today_ymd();
+    let prefix = format!("{}%", today);
+
+    let (count_res, sum_res): (i64, Option<f32>) = sales::table
+    .filter(sales::fecha.like(prefix.clone()))
+    .filter(sales::deleted_at.is_null())
+    .filter(sales::estado.ne("cancelada")) //TODO: fijarse si es correcto asi o mejor 'anulada'
+    .select((count_star(), sum(sales::total)))
+    .first(&mut conn)
+    .map_err(|e| e.to_string())?;
+
+
+    let por_fp = payments::table
+    .inner_join(sales::table.on(payments::sale_id.eq(sales::id)))
+    .filter(sales::fecha.like(prefix))
+    .filter(sales::deleted_at.is_null())
+    .filter(sales::estado.ne("anulada"))
+    .group_by(payments::forma_pago)
+    .select((payments::forma_pago, sum(payments::monto)))
+    .load::<(String, Option<f32>)>(&mut conn)
+    .map_err(|e| e.to_string())?
+    .into_iter()
+    .map(|(forma_pago, monto)| PaymentTotal { forma_pago, monto: monto.unwrap_or(0.0) })
+        .collect::<Vec<_>>();
+
+        
+    Ok(TodaySummary { ventas_count: count_res, total_dia: sum_res.unwrap_or(0.0), por_forma_pago: por_fp })
 }

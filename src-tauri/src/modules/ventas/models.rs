@@ -104,12 +104,37 @@ pub struct SaleItemNamed {
     //pub kind: &'static str, // "product" o "combo"
 }
 
+#[derive(Serialize)]
+pub struct VentaDetalle {
+    pub id: i32,
+    pub fecha: String,
+    pub producto: Option<String>, // puede venir de sale_items
+    pub cantidad: i32,
+    pub precio_unitario: f32,
+    pub ingresos: f32,
+    pub costo_unitario: f32,
+    pub costo_total: f32,
+    pub ganancia: f32,
+    pub estado: String,
+    pub forma_pago: Option<String>,
+}
 
-//#[derive(Queryable)]
-//pub struct ProductRow { pub id: i32, pub price: f32, pub quantity: i32 }
+#[derive(Serialize)]
+pub struct PaginatedVentas {
+    pub data: Vec<VentaDetalle>,
+    pub total_pages: i64,
+    pub current_page: i64,
+}
 
-//#[derive(Queryable)]
-//pub struct ComboRow { pub id: i32, pub price: f32, pub enabled: bool }
+#[derive(Serialize)]
+pub struct TodaySummary {
+    pub ventas_count: i64,
+    pub total_dia: f32,
+    pub por_forma_pago: Vec<PaymentTotal>,
+}
 
-//#[derive(Queryable)]
-//pub struct ComboItemRow { pub combo_id: i32, pub product_id: i32, pub cantidad: i32 }
+#[derive(Queryable, Serialize)]
+pub struct PaymentTotal {
+    pub forma_pago: String,
+    pub monto: f32,
+}

@@ -10,7 +10,9 @@
       "identifier": "fs:scope",
       "allow": [
           { "path": "$APPLOCALDATA/*" },
-          { "path": "$DESKTOP/*" }
+          { "path": "$DESKTOP/*" },
+          { "path": "$DOCUMENT" },
+          { "path": "$DOCUMENT/**/*" }
       ]
     }
   ]

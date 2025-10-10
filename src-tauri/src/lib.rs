@@ -40,12 +40,12 @@ pub fn run() {
             .map_err(|e| format!("No se pudo resolver app_data_dir: {e}"))?;
             std::fs::create_dir_all(&app_dir)?;
 
+            //LA UBICACION DE LA DB ES EN APPDATA/ROAMING/COM.INVENTARIO.APP/INVENTORY.DB
             let db_path = app_dir.join("inventory.db");
 
             // 2) Pool Diesel
             crate::config::db::init_pool(&db_path)?;
 
-            // 3) Migraciones embebidas (primera ejecución crea tablas/esquema)
             {
                 let mut conn = crate::config::db::get_conn(); // PooledConnection
                 crate::migrations::run(&mut conn)?;
@@ -91,7 +91,8 @@ pub fn run() {
             preview_daily_closure,
             create_daily_closure,
             list_daily_closures,
-            is_date_closed
+            is_date_closed,
+            get_today_sales_summary
             ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

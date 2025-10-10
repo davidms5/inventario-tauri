@@ -1,8 +1,8 @@
 // src/modules/ventas/utils/pdf.ts
 import { PDFDocument, StandardFonts } from 'pdf-lib';
-import { save } from '@tauri-apps/plugin-dialog';
-import { writeFile } from '@tauri-apps/plugin-fs';
-import { desktopDir, join } from '@tauri-apps/api/path';
+//import { save } from '@tauri-apps/plugin-dialog';
+import { writeFile, mkdir, exists } from '@tauri-apps/plugin-fs';
+import { join, BaseDirectory } from '@tauri-apps/api/path';
 
 // Tipos mínimos (ajustá a tu shape real)
 type Sale = {
@@ -18,6 +18,27 @@ type SaleItem = {
   nombre: string;
 };
 type SaleWithItems = { sale: Sale; items: SaleItem[] };
+
+
+function folderMesAnio(fechaISO: string) {
+  // fecha: "2025-08-31 14:22:10" o ISO; adaptá si tu backend usa otro formato
+  const d = new Date(fechaISO.replace(' ', 'T'));
+  // Mes en español + año, p. ej. "agosto de 2025"
+  const long = new Intl.DateTimeFormat('es-AR', { month: 'long', year: 'numeric' }).format(d);
+  // Lo dejamos como "agosto-2025"
+  const [mes, , anio] = long.split(' ');
+  return `${mes}-${anio}`;
+}
+
+async function ensureDirChain(parts: string[]) {
+  let acc = '';
+  for (const p of parts) {
+    acc = acc ? await join(acc, p) : p;             // "MiNegocio" -> "MiNegocio/Comprobantes" -> ...
+    if (!(await exists(acc, { baseDir: BaseDirectory.Document }))) {
+      await mkdir(acc, { baseDir: BaseDirectory.Document });
+    }
+  }
+}
 
 // Genera bytes PDF y los guarda donde el usuario elija
 export async function generateAndSaveSalePdf(
@@ -85,16 +106,19 @@ export async function generateAndSaveSalePdf(
 
   const bytes = await pdf.save(); // Uint8Array listo para escribir :contentReference[oaicite:1]{index=1}
 
-  // Sugerimos Desktop y nombre
-  const suggested = await join(await desktopDir(), `venta_${sale.sale.id}.pdf`);
-  // Abrimos diálogo de guardar: agrega esa ruta al scope automáticamente :contentReference[oaicite:2]{index=2}
-  const dest = await save({
-    title: 'Guardar comprobante',
-    defaultPath: suggested,
-    filters: [{ name: 'PDF', extensions: ['pdf'] }],
-  });
-  if (!dest) return;
+  const mesAnio = folderMesAnio(sale.sale.fecha);                         // "octubre-2025"
+  // Construimos todo **relativo** a Document:
+  const base = 'MiNegocio';
+  const comprobantes = await join(base, 'Comprobantes');
+  const carpetaMes = await join(comprobantes, mesAnio);
 
-  // Escribimos archivo (podés pasar Uint8Array directo) :contentReference[oaicite:3]{index=3}
-  await writeFile(dest, bytes);
+   await ensureDirChain([base, "Comprobantes", mesAnio]); // crea niveles si faltan
+  // Sugerimos Desktop y nombre
+  const filename = `venta_${sale.sale.id}.pdf`;
+  const relPath = await join(carpetaMes, filename);
+
+
+  // Escribir sin diálogo
+   await writeFile(relPath, bytes, { baseDir: BaseDirectory.Document });
+
 }
